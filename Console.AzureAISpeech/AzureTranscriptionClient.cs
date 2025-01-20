@@ -8,6 +8,8 @@ using Microsoft.CognitiveServices.Speech.Audio;
 using ConsoleAssemblyAI;
 using MEAI.Abstractions;
 using Microsoft.Extensions.AI;
+using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
 public class AzureTranscriptionClient : IAudioTranscriptionClient
 {
@@ -24,34 +26,69 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
     {
     }
 
-    public async Task<TranscriptionCompletion> TranscribeAsync(IAsyncEnumerable<AudioContent> audioContent, TranscriptionOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<TranscriptionCompletion> TranscribeAsync(IAsyncEnumerable<AudioContent> audioContents, TranscriptionOptions? options = null, CancellationToken cancellationToken = default)
     {
+       
         var speechConfig = SpeechConfig.FromSubscription(_subscriptionKey, _region);
         speechConfig.SpeechRecognitionLanguage = options?.SourceLanguage ?? "en-US";
+        PushAudioInputStream? audioConfigStream = null;  
+        AudioConfig? audioConfig = null;
 
-        var enumerator = audioContent.GetAsyncEnumerator(cancellationToken);
-        await enumerator.MoveNextAsync();
+        var lastContentSize = 0;
+        await foreach (var audioContent in audioContents)
+        {
+            if (!audioContent.ContainsData)
+            {
+                throw new NotSupportedException("Azure Speech does not work with audio data reference. Please provide the audio data directly.");
+            }
 
-        var firstChunk = enumerator.Current;
+            if (audioContent.Data.HasValue)
+            {
+                audioConfigStream ??= AudioInputStream.CreatePushStream();
+                audioConfig ??= AudioConfig.FromStreamInput(audioConfigStream);
 
-        using var audioConfig = firstChunk.ContainsData
-            ? AudioConfig.FromStreamInput(new AudioContentAsyncEnumerableStream(audioContent, cancellationToken))
-            : AudioConfig.FromWavFileInput(firstChunk.Uri);
+                var buffer = audioContent.Data.Value.ToArray();
+                lastContentSize = buffer.Length;
+                audioConfigStream.Write(buffer);
+            }
+        }
 
-        using var recognizer = new SpeechRecognizer(speechConfig, audioConfig);
-        var result = await recognizer.RecognizeOnceAsync();
+        if (audioConfigStream is null)
+        {
+            throw new InvalidOperationException("No audio data was provided.");
+        }
+
+        using var speechRecognizer = new SpeechRecognizer(speechConfig, audioConfig);
+
+        if (lastContentSize > 0)
+        {
+            // Signal finish streaming audio
+            audioConfigStream.Write([], 0);
+        }
+
+        var speechRecognitionResult = await speechRecognizer.RecognizeOnceAsync();
+
+        audioConfig?.Dispose();
+        audioConfigStream?.Dispose();
 
         return new TranscriptionCompletion
         {
-            RawRepresentation = result,
-            CompletionId = result.ResultId,
-            ModelId = speechConfig.EndpointId,
-            Content = new TranscribedContent(result.Text)
+            RawRepresentation = speechRecognitionResult,
+            CompletionId = speechRecognitionResult.ResultId,
+            Content = new TranscribedContent(speechRecognitionResult.Text),
+            StartTime = TimeSpan.Zero,
+            EndTime = speechRecognitionResult.Duration,
+            AdditionalProperties = new AdditionalPropertiesDictionary
+            {
+                [nameof(speechRecognitionResult.Reason)] = speechRecognitionResult.Reason
+            }
         };
     }
 
-    public async IAsyncEnumerable<StreamingTranscriptionUpdate> TranscribeStreamingAsync(IAsyncEnumerable<AudioContent> audioUpdates, TranscriptionOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public IAsyncEnumerable<StreamingTranscriptionUpdate> TranscribeStreamingAsync(IAsyncEnumerable<AudioContent> audioUpdates, TranscriptionOptions? options = null, CancellationToken cancellationToken = default)
     {
+        throw new NotImplementedException();
+        /*
         var speechConfig = SpeechConfig.FromSubscription(_subscriptionKey, _region);
         speechConfig.SpeechRecognitionLanguage = options?.SourceLanguage ?? "en-US";
 
@@ -137,5 +174,7 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
         }
 
         await recognizer.StopContinuousRecognitionAsync();
+
+        */
     }
 }

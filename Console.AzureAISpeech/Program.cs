@@ -7,6 +7,8 @@ using Microsoft.CognitiveServices.Speech.Audio;
 using ConsoleAssemblyAI;
 using MEAI.Abstractions;
 using Microsoft.Extensions.AI;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 internal sealed class Program
 {
@@ -19,13 +21,109 @@ internal sealed class Program
             .AddUserSecrets<Program>()
             .Build();
 
-        s_subscriptionKey = config["AzureAI:SubscriptionKey"]!;
-        s_region = config["AzureAI:Region"]!;
+        s_subscriptionKey = config["AzureAISpeech:SubscriptionKey"]!;
+        s_region = config["AzureAISpeech:Region"]!;
 
-        await AzureAI_ITranscriptionClient_MicrophoneStreaming();
+        // await AzureAI_ITranscriptionClient_MicrophoneStreaming();
         // await AzureAI_Streaming();
         // await AzureAI_NonStreaming();
         // await AzureAI_ITranscriptionClient_NonStreaming();
+
+        await AzureAI_ITranscriptionClient_NonStreaming();
+    }
+
+    private static async Task AzureAI_ITranscriptionClient_NonStreaming()
+    {
+        using var client = new AzureTranscriptionClient(s_subscriptionKey, s_region);
+        var audioContents = UpdateAudioFile("ian.wav");
+
+        Console.WriteLine("Transcription Started");
+        var completion = await client.TranscribeAsync(audioContents, new(), CancellationToken.None);
+        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime} : {completion.Content!.Transcription}");
+        Console.WriteLine("Transcription Complete.");
+    }
+
+    private static async Task AzureAI_MicrophoneManual()
+    {
+        var speechConfig = SpeechConfig.FromSubscription(s_subscriptionKey, s_region);
+
+        using var audioConfigStream = AudioInputStream.CreatePushStream();
+
+        var audioEnumerable = UploadMicrophoneAudio(new TranscriptionOptions
+        {
+            SourceSampleRate = 16_000,
+            AdditionalProperties = new AdditionalPropertiesDictionary
+            {
+                { "DisablePartialTranscripts", true }
+            }
+        });
+
+        using var audioConfig = AudioConfig.FromStreamInput(audioConfigStream);
+        using var speechRecognizer = new SpeechRecognizer(speechConfig, audioConfig);
+
+        Stopwatch stopwatch = new();
+        stopwatch.Start();
+        
+        Console.WriteLine("Speak into your microphone.");
+
+        await foreach (var audioContent in audioEnumerable)
+        {
+            audioConfigStream.Write(audioContent.Data!.Value.ToArray());
+
+            if (stopwatch.ElapsedMilliseconds > 5000)
+            {
+                audioConfigStream.Write([], 0);
+                break;
+            }
+        }
+
+        var speechRecognitionResult = await speechRecognizer.RecognizeOnceAsync();
+        Console.WriteLine($"RECOGNIZED: Text={speechRecognitionResult.Text}");
+    }
+
+    private static async IAsyncEnumerable<AudioContent> UploadMicrophoneAudio(TranscriptionOptions options)
+    {
+        var cts = new CancellationTokenSource();
+        var ct = cts.Token;
+
+        Console.CancelKeyPress += (sender, e) => cts.Cancel();
+
+        var soxArguments = string.Join(' ', [
+           // --default-device doesn't work on Windows
+           RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-t waveaudio default" : "--default-device",
+            "--no-show-progress",
+            $"--rate {options.SourceSampleRate}",
+            "--channels 1",
+            "--encoding signed-integer",
+            "--bits 16",
+            "--type wav",
+            "-" // pipe
+       ]);
+
+        using var soxProcess = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "sox",
+                Arguments = soxArguments,
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+        };
+
+        soxProcess.Start();
+        var soxOutputStream = soxProcess.StandardOutput.BaseStream;
+
+        var buffer = new byte[4096];
+        var bytesRead = 0;
+        while ((bytesRead = await soxOutputStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+        {
+            if (ct.IsCancellationRequested) break;
+            yield return new AudioContent(buffer);
+        }
+
+        soxProcess.Kill();
     }
 
     private static async Task AzureAI_ITranscriptionClient_MicrophoneStreaming()
@@ -114,129 +212,14 @@ internal sealed class Program
         }
     }
 
-    private static async IAsyncEnumerable<AudioContent> UploadMicrophoneAudio(TranscriptionOptions options)
+
+    private static Task AzureAI_Streaming()
     {
-        var cts = new CancellationTokenSource();
-        var ct = cts.Token;
-
-        Console.CancelKeyPress += (sender, e) => cts.Cancel();
-
-        var soxArguments = string.Join(' ', [
-           RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-t waveaudio default" : "--default-device",
-            "--no-show-progress",
-            $"--rate {options.SourceSampleRate}",
-            "--channels 1",
-            "--encoding signed-integer",
-            "--bits 16",
-            "--type wav",
-            "-" 
-       ]);
-
-        using var soxProcess = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = "sox",
-                Arguments = soxArguments,
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            }
-        };
-
-        soxProcess.Start();
-        var soxOutputStream = soxProcess.StandardOutput.BaseStream;
-
-        var buffer = new byte[4096];
-        var bytesRead = 0;
-        while ((bytesRead = await soxOutputStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-        {
-            if (ct.IsCancellationRequested) break;
-            yield return new AudioContent(buffer);
-        }
-
-        soxProcess.Kill();
+        return Task.CompletedTask;
     }
 
-    private static async Task AzureAI_ITranscriptionClient_NonStreaming()
+    private static Task AzureAI_NonStreaming()
     {
-        using var client = new AzureTranscriptionClient(s_subscriptionKey, s_region);
-        var audioContent = new AudioContent(File.ReadAllBytes("PathToFile.wav"));
-
-        var result = await client.TranscribeAsync(audioContent, new()
-        {
-            SourceLanguage = "en-US",
-        }, CancellationToken.None);
-    }
-
-    private static async Task AzureAI_Streaming()
-    {
-        var cts = new CancellationTokenSource();
-        var ct = cts.Token;
-
-        Console.CancelKeyPress += (sender, e) => cts.Cancel();
-
-        var sampleRate = 16_000U;
-        var speechConfig = SpeechConfig.FromSubscription(s_subscriptionKey, s_region);
-        speechConfig.SpeechRecognitionLanguage = "en-US";
-
-        using var audioConfig = AudioConfig.FromStreamInput(new AudioContentAsyncEnumerableStream(UploadMicrophoneAudio(new TranscriptionOptions { SourceSampleRate = (int)sampleRate })));
-        using var recognizer = new SpeechRecognizer(speechConfig, audioConfig);
-
-        var stopRecognition = new TaskCompletionSource<int>();
-
-        recognizer.Recognizing += (s, e) =>
-        {
-            Console.WriteLine($"Recognizing: {e.Result.Text}");
-        };
-
-        recognizer.Recognized += (s, e) =>
-        {
-            if (e.Result.Reason == ResultReason.RecognizedSpeech)
-            {
-                Console.WriteLine($"Recognized: {e.Result.Text}");
-            }
-            else if (e.Result.Reason == ResultReason.NoMatch)
-            {
-                Console.WriteLine($"NoMatch: Speech could not be recognized.");
-            }
-        };
-
-        recognizer.Canceled += (s, e) =>
-        {
-            Console.WriteLine($"Canceled: Reason={e.Reason}");
-
-            if (e.Reason == CancellationReason.Error)
-            {
-                Console.WriteLine($"Canceled: ErrorCode={e.ErrorCode}");
-                Console.WriteLine($"Canceled: ErrorDetails={e.ErrorDetails}");
-                Console.WriteLine($"Canceled: Did you set the speech resource key and region values?");
-            }
-
-            stopRecognition.TrySetResult(0);
-        };
-
-        recognizer.SessionStopped += (s, e) =>
-        {
-            Console.WriteLine("\n    Session stopped event.");
-            stopRecognition.TrySetResult(0);
-        };
-
-        await recognizer.StartContinuousRecognitionAsync();
-        await Task.WhenAny(stopRecognition.Task);
-        await recognizer.StopContinuousRecognitionAsync();
-    }
-
-    private static async Task AzureAI_NonStreaming()
-    {
-        var speechConfig = SpeechConfig.FromSubscription(s_subscriptionKey, s_region);
-        speechConfig.SpeechRecognitionLanguage = "en-US";
-
-        using var audioConfig = AudioConfig.FromWavFileInput("PathToFile.wav");
-        using var recognizer = new SpeechRecognizer(speechConfig, audioConfig);
-
-        var result = await recognizer.RecognizeOnceAsync();
-
-        Console.WriteLine(result.Text);
+        return Task.CompletedTask;
     }
 }

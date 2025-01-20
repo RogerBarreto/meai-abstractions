@@ -16,7 +16,8 @@
   <ItemGroup>
     <ProjectReference Include="..\MEAI.Abstractions\MEAI.Abstractions.csproj" />
   </ItemGroup>
-  <ItemGroup>
-	  <Compile Include="$(RepoRoot)/MEAI.Abstractions/Utilities/*.cs" Link="InternalUtilities/%(RecursiveDir)%(Filename)%(Extension)" />
-  </ItemGroup>
+	<ItemGroup>
+		<Compile Include="$(RepoRoot)/MEAI.Abstractions/Utilities/*.cs" Link="InternalUtilities/%(RecursiveDir)%(Filename)%(Extension)" />
+	</ItemGroup>
+
 </Project>

@@ -44,7 +44,7 @@ internal class Program
 
         Console.WriteLine("Transcription Started");
         var completion = await client.TranscribeAsync(audioContents, new(), CancellationToken.None);
-        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime} : {completion.Content.Transcription}");
+        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime} : {completion.Content!.Transcription}");
         Console.WriteLine("Transcription Complete.");
     }
 

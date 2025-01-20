@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -16,4 +16,15 @@
   <ItemGroup>
     <ProjectReference Include="..\MEAI.Abstractions\MEAI.Abstractions.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+	<Compile Include="$(RepoRoot)/MEAI.Abstractions/Utilities/*.cs" Link="InternalUtilities/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="ian.wav">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
