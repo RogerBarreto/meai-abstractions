@@ -59,65 +59,83 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
         using var recognizer = new SpeechRecognizer(speechConfig, audioConfig);
 
         var stopRecognition = new TaskCompletionSource<int>();
+        Queue<StreamingTranscriptionUpdate> updates = new();
 
         recognizer.Recognizing += (s, e) =>
         {
-            yield return new StreamingTranscriptionUpdate
+            updates.Enqueue(new StreamingTranscriptionUpdate
             {
                 RawRepresentation = e,
                 EventName = "Recognizing",
                 Transcription = e.Result.Text
-            };
+            });
         };
 
         recognizer.Recognized += (s, e) =>
         {
             if (e.Result.Reason == ResultReason.RecognizedSpeech)
             {
-                yield return new StreamingTranscriptionUpdate
+                updates.Enqueue(new StreamingTranscriptionUpdate
                 {
                     RawRepresentation = e,
                     EventName = "Recognized",
                     Transcription = e.Result.Text
-                };
+                });
             }
             else if (e.Result.Reason == ResultReason.NoMatch)
             {
-                yield return new StreamingTranscriptionUpdate
+                updates.Enqueue(new StreamingTranscriptionUpdate
                 {
                     RawRepresentation = e,
                     EventName = "NoMatch",
                     Transcription = "Speech could not be recognized."
-                };
+                });
             }
         };
 
         recognizer.Canceled += (s, e) =>
         {
-            yield return new StreamingTranscriptionUpdate
+            updates.Enqueue(new StreamingTranscriptionUpdate
             {
                 RawRepresentation = e,
                 EventName = "Canceled",
                 Transcription = $"Reason={e.Reason}, ErrorCode={e.ErrorCode}, ErrorDetails={e.ErrorDetails}"
-            };
+            });
 
             stopRecognition.TrySetResult(0);
         };
 
         recognizer.SessionStopped += (s, e) =>
         {
-            yield return new StreamingTranscriptionUpdate
+            updates.Enqueue(new StreamingTranscriptionUpdate
             {
                 RawRepresentation = e,
                 EventName = "SessionStopped",
                 Transcription = "Session stopped event."
-            };
+            });
 
             stopRecognition.TrySetResult(0);
         };
 
         await recognizer.StartContinuousRecognitionAsync();
-        await Task.WhenAny(stopRecognition.Task);
+
+        while (!stopRecognition.Task.IsCompleted || updates.Count > 0)
+        {
+            if (updates.Count > 0)
+            {
+                yield return updates.Dequeue();
+            }
+            else
+            {
+                await Task.Delay(100);
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
+        }
+
         await recognizer.StopContinuousRecognitionAsync();
     }
 }
