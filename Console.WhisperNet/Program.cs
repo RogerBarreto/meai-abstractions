@@ -15,12 +15,27 @@ internal class Program
 {
     static async Task Main(string[] args)
     {
-        await Whisper_ITranscriptionClient_FileNonStreaming();
+        var ggmlType = GgmlType.LargeV3;
+        var modelFileName = "ggml-large-v3.bin";
+
+        using var whisperLogger = LogProvider.AddConsoleLogging(WhisperLogLevel.Debug);
+
+        // This section detects whether the "ggml-base.bin" file exists in our project disk. If it doesn't, it downloads it from the internet
+        if (!File.Exists(modelFileName))
+        {
+            await DownloadModel(modelFileName, ggmlType);
+        }
+
+        RuntimeOptions.RuntimeLibraryOrder = [
+            RuntimeLibrary.Cuda
+        ];
+
+        // await Whisper_ITranscriptionClient_FileNonStreaming();
 
         // await Whisper_ITranscriptionClient_FileStreaming();
         // await Whisper_ITranscriptionClient_MicrophoneStreaming();
 
-        // await Whisper_Manual();
+        await Whisper_Manual(modelFileName);
     }
 
     private static async Task Whisper_ITranscriptionClient_FileStreaming()
@@ -162,24 +177,10 @@ internal class Program
         await modelStream.CopyToAsync(fileWriter);
     }
 
-    private static async Task Whisper_Manual()
+    private static async Task Whisper_Manual(string modelFileName)
     {
         Console.WriteLine("Hello, World!");
-
-        var ggmlType = GgmlType.LargeV3;
-        var modelFileName = "ggml-large-v3.bin";
-        var wavFileName = "fernanda.wav";
-
-        using var whisperLogger = LogProvider.AddConsoleLogging(WhisperLogLevel.Debug);
-        RuntimeOptions.RuntimeLibraryOrder = [
-            RuntimeLibrary.Cuda
-        ];
-
-        // This section detects whether the "ggml-base.bin" file exists in our project disk. If it doesn't, it downloads it from the internet
-        if (!File.Exists(modelFileName))
-        {
-            await DownloadModel(modelFileName, ggmlType);
-        }
+        var wavFilename = "fernanda.wav";
 
         // This section creates the whisperFactory object which is used to create the processor object.
         using var whisperFactory = WhisperFactory.FromPath(modelFileName);
@@ -190,7 +191,7 @@ internal class Program
             .Build();
 
         // This section creates the whisperFactory object which is used to create the processor object.
-        using var fileStream = File.OpenRead(wavFileName);
+        using var fileStream = File.OpenRead(wavFilename);
 
         // This section processes the audio file and prints the results (start time, end time and text) to the console.
         await foreach (var result in processor.ProcessAsync(fileStream))
