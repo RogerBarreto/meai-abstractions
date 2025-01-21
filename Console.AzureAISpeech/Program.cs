@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
-using ConsoleAssemblyAI;
 using MEAI.Abstractions;
 using Microsoft.Extensions.AI;
 using System.Diagnostics;

@@ -1,9 +1,9 @@
 using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
-using ConsoleAssemblyAI;
 using Microsoft.Extensions.AI;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using MEAI.Abstractions;
 
 public class AzureTranscriptionClient : IAudioTranscriptionClient
 {
@@ -12,8 +12,8 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
 
     public AzureTranscriptionClient(string subscriptionKey, string region)
     {
-        _subscriptionKey = subscriptionKey;
-        _region = region;
+        this._subscriptionKey = subscriptionKey;
+        this._region = region;
     }
 
     public void Dispose()
@@ -23,7 +23,7 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
     public async Task<TranscriptionCompletion> TranscribeAsync(IAsyncEnumerable<AudioContent> audioContents, TranscriptionOptions? options = null, CancellationToken cancellationToken = default)
     {
        
-        var speechConfig = SpeechConfig.FromSubscription(_subscriptionKey, _region);
+        var speechConfig = SpeechConfig.FromSubscription(this._subscriptionKey, this._region);
         speechConfig.SpeechRecognitionLanguage = options?.SourceLanguage ?? "en-US";
         PushAudioInputStream? audioConfigStream = null;  
         AudioConfig? audioConfig = null;
@@ -81,7 +81,7 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
 
     public async IAsyncEnumerable<StreamingTranscriptionUpdate> TranscribeStreamingAsync(IAsyncEnumerable<AudioContent> audioContents, TranscriptionOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var speechConfig = SpeechConfig.FromSubscription(_subscriptionKey, _region);
+        var speechConfig = SpeechConfig.FromSubscription(this._subscriptionKey, this._region);
         speechConfig.SpeechRecognitionLanguage = options?.SourceLanguage ?? "en-US";
         using var audioConfigStream = AudioInputStream.CreatePushStream();
         using var audioConfig = AudioConfig.FromStreamInput(audioConfigStream);

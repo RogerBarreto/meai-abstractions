@@ -1,7 +1,9 @@
-﻿namespace ConsoleAssemblyAI;
-
+﻿
 using AssemblyAI;
 using AssemblyAI.Transcripts;
+using MEAI.Abstractions;
+
+namespace ConsoleAssemblyAI;
 
 internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptionClient
 {

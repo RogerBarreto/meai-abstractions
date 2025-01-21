@@ -1,8 +1,7 @@
-﻿namespace ConsoleAssemblyAI;
-
+﻿
 using Microsoft.Extensions.AI;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+
+namespace MEAI.Abstractions;
 
 public static class AudioTranscriptionClientExtensions
 {

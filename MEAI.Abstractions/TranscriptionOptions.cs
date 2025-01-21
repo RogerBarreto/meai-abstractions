@@ -1,6 +1,7 @@
-﻿namespace ConsoleAssemblyAI;
-
+﻿
 using Microsoft.Extensions.AI;
+
+namespace MEAI.Abstractions;
 
 public class TranscriptionOptions
 {

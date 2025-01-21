@@ -1,9 +1,7 @@
-﻿namespace ConsoleAssemblyAI;
-
+﻿
 using Microsoft.Extensions.AI;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+
+namespace MEAI.Abstractions;
 
 public interface IAudioTranscriptionClient : IDisposable
 {

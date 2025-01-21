@@ -1,7 +1,7 @@
-﻿namespace ConsoleAssemblyAI;
-
+﻿
 using Microsoft.Extensions.AI;
 
+namespace MEAI.Abstractions;
 public class TranscribedContent : AIContent
 {
     public TranscribedContent(string transcription)

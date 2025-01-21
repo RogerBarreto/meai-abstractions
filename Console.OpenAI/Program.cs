@@ -1,9 +1,10 @@
 using Microsoft.Extensions.Configuration;
-using ConsoleAssemblyAI;
 using MEAI.Abstractions;
 using Microsoft.Extensions.AI;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+
+namespace ConsoleOpenAI;
 
 internal sealed class Program
 {
@@ -25,7 +26,7 @@ internal sealed class Program
     private static async Task OpenAI_ITranscriptionClient_FileNonStreaming()
     {
         using var client = new OpenAITranscriptionClient(s_apiKey);
-        var audioContents = UploadAudioFile("path_to_audio_file.wav");
+        var audioContents = UploadAudioFile("ian.wav");
 
         Console.WriteLine("Transcription Started");
         var completion = await client.TranscribeAsync(audioContents, new(), CancellationToken.None);
@@ -41,16 +42,12 @@ internal sealed class Program
             SourceSampleRate = 16_000
         };
 
-        var audioContents = UploadMicrophoneAudio(options);
+        // Upload microphone audio for 5 seconds
+        var audioContents = UploadMicrophoneAudio(options, TimeSpan.FromSeconds(5));
 
         await foreach (var update in client.TranscribeStreamingAsync(audioContents, options, CancellationToken.None))
         {
-            switch (update.EventName)
-            {
-                case "TranscriptionComplete":
-                    Console.WriteLine($"TranscriptionComplete: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
-                    break;
-            }
+            Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
         }
     }
 
@@ -62,29 +59,24 @@ internal sealed class Program
             SourceSampleRate = 16_000
         };
 
-        var audioContents = UploadAudioFile("path_to_audio_file.wav");
+        var audioContents = UploadAudioFile("ian.wav");
 
         await foreach (var update in client.TranscribeStreamingAsync(audioContents, fileOptions, CancellationToken.None))
         {
-            switch (update.EventName)
-            {
-                case "TranscriptionComplete":
-                    Console.WriteLine($"TranscriptionComplete: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
-                    break;
-            }
+            Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
         }
     }
 
     private static async IAsyncEnumerable<AudioContent> UploadAudioFile(string filePath)
     {
         using var fileStream = File.OpenRead(filePath);
-        await foreach (var update in new AsyncEnumerableAudioStream(fileStream))
+        await foreach (var update in new AsyncEnumerableAudioStream(fileStream, "audio/wav"))
         {
             yield return update;
         }
     }
 
-    private static async IAsyncEnumerable<AudioContent> UploadMicrophoneAudio(TranscriptionOptions options)
+    private static async IAsyncEnumerable<AudioContent> UploadMicrophoneAudio(TranscriptionOptions options, TimeSpan duration)
     {
         var cts = new CancellationTokenSource();
         var ct = cts.Token;
@@ -115,12 +107,17 @@ internal sealed class Program
             }
         };
 
+        var stopwatch = Stopwatch.StartNew();
         soxProcess.Start();
         var soxOutputStream = soxProcess.StandardOutput.BaseStream;
 
-        await foreach (var update in new AsyncEnumerableAudioStream(soxOutputStream))
+        await foreach (var update in new AsyncEnumerableAudioStream(soxOutputStream, "audio/wav"))
         {
             yield return update;
+            if (stopwatch.Elapsed > duration)
+            {
+                break;
+            }
         }
 
         soxProcess.Kill();

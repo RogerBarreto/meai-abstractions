@@ -1,13 +1,11 @@
-﻿namespace ConsoleAssemblyAI;
-
+﻿
 using AssemblyAI.Realtime;
+using MEAI.Abstractions;
 using Microsoft.Extensions.AI;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
+
+namespace ConsoleAssemblyAI;
 
 internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptionClient
 {
@@ -50,7 +48,10 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
         transcriber.PartialTranscriptReceived.Subscribe(
             transcript =>
             {
-                if (string.IsNullOrEmpty(transcript.Text)) return;
+                if (string.IsNullOrEmpty(transcript.Text))
+                {
+                    return;
+                }
 
                 updates.Enqueue(new StreamingTranscriptionUpdate
                 {

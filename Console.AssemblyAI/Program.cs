@@ -9,6 +9,8 @@ using Microsoft.Extensions.Configuration;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
+namespace ConsoleOpenAI;
+
 internal sealed class Program
 {
     private static string s_apiKey = String.Empty;
@@ -185,7 +187,11 @@ internal sealed class Program
         transcriber.PartialTranscriptReceived.Subscribe(transcript =>
         {
             // don't do anything if nothing was said
-            if (string.IsNullOrEmpty(transcript.Text)) return;
+            if (string.IsNullOrEmpty(transcript.Text))
+            {
+                return;
+            }
+
             Console.WriteLine($"Partial: {transcript.Text}");
         });
 
@@ -233,7 +239,11 @@ internal sealed class Program
         var buffer = new byte[4096];
         while (await soxOutputStream.ReadAsync(buffer, 0, buffer.Length, ct) > 0)
         {
-            if (ct.IsCancellationRequested) break;
+            if (ct.IsCancellationRequested)
+            {
+                break;
+            }
+
             await transcriber.SendAudioAsync(buffer);
         }
 
