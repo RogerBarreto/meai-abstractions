@@ -1,7 +1,6 @@
 ﻿
 using Microsoft.Extensions.AI;
 
-
 namespace MEAI.Abstractions;
 
 /// <summary>
