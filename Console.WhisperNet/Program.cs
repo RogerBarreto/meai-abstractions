@@ -1,5 +1,5 @@
 ﻿namespace Console.WhisperNet;
-
+using MEAI.Abstractions;
 using ConsoleAssemblyAI;
 using Microsoft.Extensions.AI;
 using System;
@@ -15,14 +15,17 @@ internal class Program
 {
     static async Task Main(string[] args)
     {
+        await Whisper_ITranscriptionClient_FileNonStreaming();
+
         // await Whisper_ITranscriptionClient_FileStreaming();
         // await Whisper_ITranscriptionClient_MicrophoneStreaming();
-        await Whisper_ITranscriptionClient_FileNonStreaming();
+
+        // await Whisper_Manual();
     }
 
     private static async Task Whisper_ITranscriptionClient_FileStreaming()
     {
-        var modelFile = "ggml-small.bin";
+        var modelFile = "ggml-large-v3.bin";
         using var client = new WhisperTranscriptionClient(modelFile);
 
         var audioContents = UploadAudioFile("barbara.wav");
@@ -37,20 +40,20 @@ internal class Program
 
     private static async Task Whisper_ITranscriptionClient_FileNonStreaming()
     {
-        var modelFile = "ggml-small.bin";
+        var modelFile = "ggml-large-v3.bin";
         using var client = new WhisperTranscriptionClient(modelFile);
 
         var audioContents = UploadAudioFile("barbara.wav");
 
         Console.WriteLine("Transcription Started");
         var completion = await client.TranscribeAsync(audioContents, new(), CancellationToken.None);
-        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime} : {completion.Content!.Transcription}");
+        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Content!.Transcription}");
         Console.WriteLine("Transcription Complete.");
     }
 
     private static async Task Whisper_ITranscriptionClient_MicrophoneStreaming()
     {
-        var modelFile = "ggml-base.bin";
+        var modelFile = "ggml-large-v3.bin";
         using var client = new WhisperTranscriptionClient(modelFile);
 
         Console.WriteLine("Transcription Started");
@@ -72,11 +75,9 @@ internal class Program
     {
         using var fileStream = File.OpenRead(filePath);
 
-        var buffer = new byte[4096];
-        var bytesRead = 0;
-        while ((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+        await foreach (var update in new AsyncEnumerableAudioStream(fileStream))
         {
-            yield return new AudioContent(buffer);
+            yield return update;
         }
     }
 
@@ -161,18 +162,17 @@ internal class Program
         await modelStream.CopyToAsync(fileWriter);
     }
 
-    private static async Task ManualImplementation()
+    private static async Task Whisper_Manual()
     {
         Console.WriteLine("Hello, World!");
 
-        var ggmlType = GgmlType.Small;
-        var modelFileName = "ggml-small.bin";
+        var ggmlType = GgmlType.LargeV3;
+        var modelFileName = "ggml-large-v3.bin";
         var wavFileName = "fernanda.wav";
 
         using var whisperLogger = LogProvider.AddConsoleLogging(WhisperLogLevel.Debug);
         RuntimeOptions.RuntimeLibraryOrder = [
-            RuntimeLibrary.Cuda,
-            RuntimeLibrary.Cpu
+            RuntimeLibrary.Cuda
         ];
 
         // This section detects whether the "ggml-base.bin" file exists in our project disk. If it doesn't, it downloads it from the internet

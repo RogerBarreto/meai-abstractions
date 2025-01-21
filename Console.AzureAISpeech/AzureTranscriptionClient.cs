@@ -162,7 +162,7 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
                     EndTime = GetEndTime(startTime, e.Result.Duration),
                     RawRepresentation = e,
                     EventName = "NoMatch",
-                    Transcription = "Speech could not be recognized."
+                    Message = "Speech could not be recognized."
                 });
             }
         };
@@ -179,7 +179,7 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
                 EndTime = canceledTime,
                 RawRepresentation = e,
                 EventName = "Canceled",
-                Transcription = $"Reason={e.Reason}, ErrorCode={e.ErrorCode}, ErrorDetails={e.ErrorDetails}"
+                Message = $"Reason={e.Reason}, ErrorCode={e.ErrorCode}, ErrorDetails={e.ErrorDetails}"
             });
 
             stopRecognition.TrySetResult(0);
@@ -195,7 +195,7 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
                 EndTime = sessionStopwatch.Elapsed,
                 RawRepresentation = e,
                 EventName = "SessionStopped",
-                Transcription = "Session stopped event.",
+                Message = "Session stopped event.",
                 AdditionalProperties = new AdditionalPropertiesDictionary
                 {
                     [nameof(e.SessionId)] = e.SessionId

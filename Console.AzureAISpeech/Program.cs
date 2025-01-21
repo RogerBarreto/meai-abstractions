@@ -21,21 +21,24 @@ internal sealed class Program
         s_subscriptionKey = config["AzureAISpeech:SubscriptionKey"]!;
         s_region = config["AzureAISpeech:Region"]!;
 
-        await AzureAI_ITranscriptionClient_NonStreaming();
+        await AzureAI_ITranscriptionClient_FileNonStreaming();
         // await AzureAI_ITranscriptionClient_MicrophoneStreaming();
+        // await AzureAI_ITranscriptionClient_FileStreaming();
+
+        // await AzureAI_MicrophoneManual();
     }
 
-    private static async Task AzureAI_ITranscriptionClient_NonStreaming()
+    private static async Task AzureAI_ITranscriptionClient_FileNonStreaming()
     {
         using var client = new AzureTranscriptionClient(s_subscriptionKey, s_region);
-        var audioContents = UpdateAudioFile("ian.wav");
+        var audioContents = UploadAudioFile("ian.wav");
 
         Console.WriteLine("Transcription Started");
         var completion = await client.TranscribeAsync(audioContents, new(), CancellationToken.None);
         Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Content!.Transcription}");
         Console.WriteLine("Transcription Complete.");
     }
-    private static async IAsyncEnumerable<AudioContent> UpdateAudioFile(string filePath)
+    private static async IAsyncEnumerable<AudioContent> UploadAudioFile(string filePath)
     {
         using var fileStream = File.OpenRead(filePath);
         await foreach (var update in new AsyncEnumerableAudioStream(fileStream))
@@ -146,13 +149,13 @@ internal sealed class Program
                     Console.WriteLine($"Recognized: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
                     break;
                 case "NoMatch":
-                    Console.WriteLine($"NoMatch: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
+                    Console.WriteLine($"NoMatch: [{update.StartTime} --> {update.EndTime}] : {update.Message} ");
                     break;
                 case "Canceled":
-                    Console.WriteLine($"Canceled: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
+                    Console.WriteLine($"Canceled: [{update.StartTime} --> {update.EndTime}] : {update.Message} ");
                     break;
                 case "SessionStopped":
-                    Console.WriteLine($"SessionStopped: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
+                    Console.WriteLine($"SessionStopped: [{update.StartTime} --> {update.EndTime}] : {update.Message} ");
                     break;
             }
         }
@@ -163,14 +166,10 @@ internal sealed class Program
         using var client = new AzureTranscriptionClient(s_subscriptionKey, s_region);
         var fileOptions = new TranscriptionOptions
         {
-            SourceSampleRate = 48_000,
-            AdditionalProperties = new AdditionalPropertiesDictionary
-            {
-                { "DisablePartialTranscripts", false }
-            }
+            SourceSampleRate = 16_000
         };
 
-        var audioContents = UpdateAudioFile("PathToFile.wav");
+        var audioContents = UploadAudioFile("ian.wav");
 
         await foreach (var update in client.TranscribeStreamingAsync(audioContents, fileOptions, CancellationToken.None))
         {
@@ -183,25 +182,15 @@ internal sealed class Program
                     Console.WriteLine($"Recognized: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
                     break;
                 case "NoMatch":
-                    Console.WriteLine($"NoMatch: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
+                    Console.WriteLine($"NoMatch: [{update.StartTime} --> {update.EndTime}] : {update.Message} ");
                     break;
                 case "Canceled":
-                    Console.WriteLine($"Canceled: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
+                    Console.WriteLine($"Canceled: [{update.StartTime} --> {update.EndTime}] : {update.Message} ");
                     break;
                 case "SessionStopped":
-                    Console.WriteLine($"SessionStopped: {update.Transcription} ");
+                    Console.WriteLine($"SessionStopped: {update.Message} ");
                     break;
             }
         }
-    }
-
-    private static Task AzureAI_Streaming()
-    {
-        return Task.CompletedTask;
-    }
-
-    private static Task AzureAI_NonStreaming()
-    {
-        return Task.CompletedTask;
     }
 }

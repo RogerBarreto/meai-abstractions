@@ -3,6 +3,7 @@ using AssemblyAI;
 using AssemblyAI.Realtime;
 using AssemblyAI.Transcripts;
 using ConsoleAssemblyAI;
+using MEAI.Abstractions;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using System.Diagnostics;
@@ -20,10 +21,10 @@ internal sealed class Program
         s_apiKey = config["AssemblyAI:ApiKey"]!;
 
         await AssemblyAI_ITranscriptionClient_MicrophoneStreaming();
-        // await AssemblyAI_Streaming();
-        // await AssemblyAI_NonStreaming();
+        // await AssemblyAI_ITranscriptionClient_NonStreaming();
 
-        // await AssemblyAI_ITranscriptionClient_NonStreaming()
+        // await AssemblyAI_Manual_Streaming();
+        // await AssemblyAI_Manual_NonStreaming();
     }
 
     private static async Task AssemblyAI_ITranscriptionClient_MicrophoneStreaming()
@@ -34,7 +35,7 @@ internal sealed class Program
             SourceSampleRate = 16_000,
             AdditionalProperties = new AdditionalPropertiesDictionary
             {
-                { "DisablePartialTranscripts", true }
+                { "DisablePartialTranscripts", false }
             }
         };
 
@@ -45,19 +46,19 @@ internal sealed class Program
             switch (update.EventName)
             {
                 case "PartialTranscriptReceived":
-                    Console.WriteLine($"PartialTranscriptReceived: {update.Transcription} ");
+                    Console.WriteLine($"PartialTranscriptReceived: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
                     break;
                 case "FinalTranscriptReceived":
-                    Console.WriteLine($"FinalTranscriptReceived: {update.Transcription} ");
+                    Console.WriteLine($"FinalTranscriptReceived: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
                     break;
                 case "SessionBegins":
-                    Console.WriteLine("\n -- Started --\n");
+                    Console.WriteLine($"SessionBegins: {update.Message}");
                     break;
                 case "Closed":
-                    Console.WriteLine("\n -- Closed --\n");
+                    Console.WriteLine($"Closed: {update.Message}");
                     break;
                 case "ErrorReceived":
-                    Console.WriteLine($"{update.Transcription} ");
+                    Console.WriteLine($"ErrorReceived: {update.Message}");
                     break;
             }
         }
@@ -83,19 +84,19 @@ internal sealed class Program
             switch (update.EventName)
             {
                 case "PartialTranscriptReceived":
-                    Console.WriteLine($"PartialTranscriptReceived: {update.Transcription} ");
+                    Console.WriteLine($"PartialTranscriptReceived: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
                     break;
                 case "FinalTranscriptReceived":
-                    Console.WriteLine($"FinalTranscriptReceived: {update.Transcription} ");
+                    Console.WriteLine($"FinalTranscriptReceived: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
                     break;
                 case "SessionBegins":
-                    Console.WriteLine("\n -- Started --\n");
+                    Console.WriteLine($"SessionBegins: {update.Message}");
                     break;
                 case "Closed":
-                    Console.WriteLine("\n -- Closed --\n");
+                    Console.WriteLine($"Closed: {update.Message}");
                     break;
                 case "ErrorReceived":
-                    Console.WriteLine($"{update.Transcription} ");
+                    Console.WriteLine($"ErrorReceived: {update.Message}");
                     break;
             }
         }
@@ -104,12 +105,9 @@ internal sealed class Program
     private static async IAsyncEnumerable<AudioContent> UpdateAudioFile(string filePath)
     {
         using var fileStream = File.OpenRead(filePath);
-
-        var buffer = new byte[4096];
-        var bytesRead = 0;
-        while ((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+        await foreach (var update in new AsyncEnumerableAudioStream(fileStream))
         {
-            yield return new AudioContent(buffer);
+            yield return update;
         }
     }
 
@@ -147,12 +145,9 @@ internal sealed class Program
         soxProcess.Start();
         var soxOutputStream = soxProcess.StandardOutput.BaseStream;
 
-        var buffer = new byte[4096];
-        var bytesRead = 0;
-        while ((bytesRead = await soxOutputStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+        await foreach (var update in new AsyncEnumerableAudioStream(soxOutputStream))
         {
-            if (ct.IsCancellationRequested) break;
-            yield return new AudioContent(buffer);
+            yield return update;
         }
 
         soxProcess.Kill();
@@ -169,7 +164,7 @@ internal sealed class Program
         }, CancellationToken.None);
     }
 
-    private static async Task AssemblyAI_Streaming()
+    private static async Task AssemblyAI_Manual_Streaming()
     {
         var cts = new CancellationTokenSource();
         var ct = cts.Token;
@@ -246,7 +241,7 @@ internal sealed class Program
         await transcriber.CloseAsync();
     }
 
-    private static async Task AssemblyAI_NonStreaming()
+    private static async Task AssemblyAI_Manual_NonStreaming()
     {
         var apiKey = s_apiKey;
 

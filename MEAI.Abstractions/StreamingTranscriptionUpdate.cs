@@ -19,5 +19,7 @@ public class StreamingTranscriptionUpdate
 
     public string? Transcription { get; set; }
 
+    public string? Message { get; set; }
+
     public required string EventName { get; set; }
 }

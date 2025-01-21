@@ -4,6 +4,7 @@ using AssemblyAI.Realtime;
 using Microsoft.Extensions.AI;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,14 +21,16 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
         using var transcriber = new RealtimeTranscriber(this.ToRealtimeTranscriberOptions(options));
 
         var connectionOpen = true;
+        Stopwatch sessionTime = new();
 
         transcriber.SessionBegins.Subscribe(
             message =>
             {
+                sessionTime.Start();
                 updates.Enqueue(new StreamingTranscriptionUpdate
                 {
                     RawRepresentation = message,
-                    Transcription = $"Session begins: \n- Session ID: {message.SessionId}\n- Expires at: {message.ExpiresAt}",
+                    Message = $"Session begins: \n- Session ID: {message.SessionId}\n- Expires at: {message.ExpiresAt}",
                     EventName = "SessionBegins",
                 });
             });
@@ -40,7 +43,7 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
                 {
                     RawRepresentation = closeEvent,
                     EventName = "Closed",
-                    Transcription = $"Real-time connection closed: {closeEvent.Code} - {closeEvent.Reason}"
+                    Message = $"Real-time connection closed: {closeEvent.Code} - {closeEvent.Reason}"
                 });
             });
 
@@ -51,6 +54,8 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
 
                 updates.Enqueue(new StreamingTranscriptionUpdate
                 {
+                    StartTime = TimeSpan.FromMilliseconds(transcript.AudioStart),
+                    EndTime = TimeSpan.FromMilliseconds(transcript.AudioEnd),
                     RawRepresentation = transcript,
                     EventName = "PartialTranscriptReceived",
                     Transcription = transcript.Text
@@ -77,7 +82,7 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
                 {
                     RawRepresentation = error,
                     EventName = "ErrorReceived",
-                    Transcription = $"Real-time error: {error.Error}"
+                    Message = $"Real-time error: {error.Error}"
                 });
             });
 
