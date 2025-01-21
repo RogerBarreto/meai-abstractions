@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace ConsoleOpenAI;
 
-internal sealed class Program
+internal sealed partial class Program
 {
     private static string s_apiKey = String.Empty;
 
@@ -19,10 +19,10 @@ internal sealed class Program
         s_apiKey = config["OpenAI:ApiKey"]!;
 
         // await OpenAI_ITranscriptionClient_FileNonStreamingExtension();
-        await OpenAI_ITranscriptionClient_MicrophoneStreaming();
+        // await OpenAI_ITranscriptionClient_MicrophoneStreaming();
 
         // await OpenAI_ITranscriptionClient_FileStreaming();
-        // await OpenAI_ITranscriptionClient_MicrophoneStreamingExtension();
+        await OpenAI_ITranscriptionClient_MicrophoneStreamingExtension();
     }
 
     private static async Task OpenAI_ITranscriptionClient_FileNonStreaming()
@@ -51,49 +51,6 @@ internal sealed class Program
         Console.WriteLine("Transcription Complete.");
     }
 
-    private static async Task OpenAI_ITranscriptionClient_MicrophoneStreaming()
-    {
-        using var client = new OpenAITranscriptionClient(s_apiKey);
-        var options = new TranscriptionOptions
-        {
-            SourceSampleRate = 16_000
-        };
-
-        // Upload microphone audio for 5 seconds
-        var audioContents = UploadMicrophoneAudio(options, TimeSpan.FromSeconds(5));
-
-        await foreach (var update in client.TranscribeStreamingAsync(audioContents, options, CancellationToken.None))
-        {
-            Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
-        }
-    }
-
-    private static async Task OpenAI_ITranscriptionClient_MicrophoneStreamingExtension()
-    {
-        using var client = new OpenAITranscriptionClient(s_apiKey);
-        var options = new TranscriptionOptions
-        {
-            SourceSampleRate = 16_000,
-            SourceFileName = "microphone.wav"
-        };
-
-        // Upload microphone audio for 5 seconds
-        using var soxProcess = GetMicrophoneStreamProcess(options);
-        Console.WriteLine("Recording Started, press Ctrl+C to stop recording");
-        soxProcess.Start();
-
-        Console.WriteLine("Transcription Started");
-
-        await foreach (var update in client.TranscribeStreamingAsync(soxProcess.StandardOutput.BaseStream, options, CancellationToken.None))
-        {
-            Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
-        }
-
-        Console.WriteLine("Transcription Complete");
-
-        soxProcess.Kill();
-    }
-
     private static async Task OpenAI_ITranscriptionClient_FileStreaming()
     {
         using var client = new OpenAITranscriptionClient(s_apiKey);
@@ -119,33 +76,12 @@ internal sealed class Program
         }
     }
 
-    private static async IAsyncEnumerable<AudioContent> UploadMicrophoneAudio(TranscriptionOptions options, TimeSpan duration)
-    {
-        using var soxProcess = GetMicrophoneStreamProcess(options);
-
-        var stopwatch = Stopwatch.StartNew();
-        soxProcess.Start();
-        var soxOutputStream = soxProcess.StandardOutput.BaseStream;
-
-        await foreach (var update in new AsyncEnumerableAudioStream(soxOutputStream, "audio/wav"))
-        {
-            yield return update;
-
-            if (stopwatch.Elapsed > duration)
-            {
-                break;
-            }
-        }
-
-        soxProcess.Kill();
-    }
-
     private static Process GetMicrophoneStreamProcess(TranscriptionOptions options)
     {
         var cts = new CancellationTokenSource();
         var ct = cts.Token;
 
-        Console.CancelKeyPress += (sender, e) 
+        Console.CancelKeyPress += (sender, e)
             => cts.Cancel();
 
         var soxArguments = string.Join(' ', [
