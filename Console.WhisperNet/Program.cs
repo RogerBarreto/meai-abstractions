@@ -1,10 +1,7 @@
-﻿namespace Console.WhisperNet;
+﻿using ConsoleWhisperNet;
 using MEAI.Abstractions;
-using ConsoleAssemblyAI;
 using Microsoft.Extensions.AI;
-using System;
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.InteropServices;
 using Whisper.net;
 using Whisper.net.Ggml;

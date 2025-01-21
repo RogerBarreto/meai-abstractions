@@ -1,10 +1,7 @@
-﻿namespace MEAI.Abstractions;
-
+﻿
 using Microsoft.Extensions.AI;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
+namespace MEAI.Abstractions;
 internal class AudioContentAsyncEnumerableStream : Stream
 {
     private readonly IAsyncEnumerator<AudioContent> _enumerator;
@@ -15,10 +12,10 @@ internal class AudioContentAsyncEnumerableStream : Stream
 
     internal AudioContentAsyncEnumerableStream(IAsyncEnumerable<AudioContent> asyncEnumerable, CancellationToken cancellationToken = default)
     {
-        _enumerator = asyncEnumerable.GetAsyncEnumerator(cancellationToken);
-        _remainingData = Array.Empty<byte>();
-        _remainingDataOffset = 0;
-        _position = 0;
+        this._enumerator = asyncEnumerable.GetAsyncEnumerator(cancellationToken);
+        this._remainingData = Array.Empty<byte>();
+        this._remainingDataOffset = 0;
+        this._position = 0;
     }
 
     public override bool CanRead => true;
@@ -27,7 +24,7 @@ internal class AudioContentAsyncEnumerableStream : Stream
     public override long Length => throw new NotSupportedException();
     public override long Position
     {
-        get => _position;
+        get => this._position;
         set => throw new NotSupportedException();
     }
 
@@ -46,37 +43,39 @@ internal class AudioContentAsyncEnumerableStream : Stream
 
     public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
     {
-        if (_isCompleted)
+        if (this._isCompleted)
+        {
             return 0;
+        }
 
         int bytesRead = 0;
 
         while (bytesRead < count)
         {
-            if (_remainingDataOffset < _remainingData.Length)
+            if (this._remainingDataOffset < this._remainingData.Length)
             {
-                int bytesToCopy = Math.Min(count - bytesRead, _remainingData.Length - _remainingDataOffset);
-                Array.Copy(_remainingData, _remainingDataOffset, buffer, offset + bytesRead, bytesToCopy);
-                _remainingDataOffset += bytesToCopy;
+                int bytesToCopy = Math.Min(count - bytesRead, this._remainingData.Length - this._remainingDataOffset);
+                Array.Copy(this._remainingData, this._remainingDataOffset, buffer, offset + bytesRead, bytesToCopy);
+                this._remainingDataOffset += bytesToCopy;
                 bytesRead += bytesToCopy;
-                _position += bytesToCopy;
+                this._position += bytesToCopy;
             }
             else
             {
-                if (!await _enumerator.MoveNextAsync().ConfigureAwait(false))
+                if (!await this._enumerator.MoveNextAsync().ConfigureAwait(false))
                 {
-                    _isCompleted = true;
+                    this._isCompleted = true;
                     break;
                 }
 
-                if (!_enumerator.Current.Data.HasValue)
+                if (!this._enumerator.Current.Data.HasValue)
                 {
-                    _isCompleted = true;
+                    this._isCompleted = true;
                     break;
                 }
 
-                _remainingData = _enumerator.Current.Data.Value.ToArray();
-                _remainingDataOffset = 0;
+                this._remainingData = this._enumerator.Current.Data.Value.ToArray();
+                this._remainingDataOffset = 0;
             }
         }
 
@@ -87,7 +86,7 @@ internal class AudioContentAsyncEnumerableStream : Stream
     {
         if (disposing)
         {
-            _enumerator.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            this._enumerator.DisposeAsync().AsTask().GetAwaiter().GetResult();
         }
 
         base.Dispose(disposing);

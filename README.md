@@ -19,8 +19,8 @@ Use the following commands to set up the user secrets for the cloud based projec
 ```bash
 dotnet user-secrets set "AssemblyAI:ApiKey" "..."
 dotnet user-secrets set "OpenAI:ApiKey" "..."
-dotnet user-secrets set "Azure:SubscriptionKey" "..."
-dotnet user-secrets set "Azure:Region" "..."
+dotnet user-secrets set "AzureAISpeech:SubscriptionKey" "..."
+dotnet user-secrets set "AzureAISpeech:Region" "..."
 ```
 
 ## Pre-requisites

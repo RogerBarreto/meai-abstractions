@@ -1,14 +1,10 @@
-﻿namespace Console.WhisperNet;
-
-using ConsoleAssemblyAI;
-using MEAI.Abstractions;
+﻿using MEAI.Abstractions;
 using Microsoft.Extensions.AI;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Whisper.net;
+
+namespace ConsoleWhisperNet;
 
 internal sealed partial class WhisperTranscriptionClient : IAudioTranscriptionClient
 {
@@ -22,14 +18,14 @@ internal sealed partial class WhisperTranscriptionClient : IAudioTranscriptionCl
 
     public void Dispose()
     {
-        if (_processor != null)
+        if (this._processor != null)
         {
-            _processor.Dispose();
+            this._processor.Dispose();
         }
 
-        if (_factory != null)
+        if (this._factory != null)
         {
-            _factory.Dispose();
+            this._factory.Dispose();
         }
     }
 
@@ -39,9 +35,9 @@ internal sealed partial class WhisperTranscriptionClient : IAudioTranscriptionCl
 
         TranscriptionCompletion completion = new();
 
-        if (_processor is null)
+        if (this._processor is null)
         {
-            _processor = _factory
+            this._processor = this._factory
                 .CreateBuilder()
                 .WithLanguage("auto")
                 .Build();
@@ -49,7 +45,7 @@ internal sealed partial class WhisperTranscriptionClient : IAudioTranscriptionCl
 
         StringBuilder fullTranscription = new();
         List<SegmentData> segments = [];
-        await foreach (var segment in _processor.ProcessAsync(audioContentsStream, cancellationToken))
+        await foreach (var segment in this._processor.ProcessAsync(audioContentsStream, cancellationToken))
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -77,15 +73,15 @@ internal sealed partial class WhisperTranscriptionClient : IAudioTranscriptionCl
     {
         using var audioContentsStream = new AudioContentAsyncEnumerableStream(inputAudio);
 
-        if (_processor is null)
+        if (this._processor is null)
         {
-            this._processor = _factory
+            this._processor = this._factory
                 .CreateBuilder()
                 .WithLanguage("auto")
                 .Build();
         }
 
-        await foreach (var segment in _processor.ProcessAsync(audioContentsStream, cancellationToken))
+        await foreach (var segment in this._processor.ProcessAsync(audioContentsStream, cancellationToken))
         {
             if (cancellationToken.IsCancellationRequested)
             {

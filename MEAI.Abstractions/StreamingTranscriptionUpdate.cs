@@ -1,8 +1,8 @@
-﻿namespace ConsoleAssemblyAI;
-
+﻿
 using Microsoft.Extensions.AI;
-using System;
 using System.Text.Json.Serialization;
+
+namespace MEAI.Abstractions;
 
 public class StreamingTranscriptionUpdate
 {
