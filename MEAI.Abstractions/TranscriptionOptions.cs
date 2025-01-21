@@ -12,7 +12,11 @@ public class TranscriptionOptions
 
     public int? SourceSampleRate { get; set; }
 
+    public string? SourceFileName { get; set; }
+
     public int? AudioSampleRate { get; set; }
-    
+
     public AdditionalPropertiesDictionary? AdditionalProperties { get; set; }
 }
+
+    

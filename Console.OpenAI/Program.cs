@@ -18,9 +18,11 @@ internal sealed class Program
 
         s_apiKey = config["OpenAI:ApiKey"]!;
 
-        await OpenAI_ITranscriptionClient_FileNonStreaming();
-        // await OpenAI_ITranscriptionClient_MicrophoneStreaming();
+        // await OpenAI_ITranscriptionClient_FileNonStreamingExtension();
+        await OpenAI_ITranscriptionClient_MicrophoneStreaming();
+
         // await OpenAI_ITranscriptionClient_FileStreaming();
+        // await OpenAI_ITranscriptionClient_MicrophoneStreamingExtension();
     }
 
     private static async Task OpenAI_ITranscriptionClient_FileNonStreaming()
@@ -30,6 +32,21 @@ internal sealed class Program
 
         Console.WriteLine("Transcription Started");
         var completion = await client.TranscribeAsync(audioContents, new(), CancellationToken.None);
+        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Content!.Transcription}");
+        Console.WriteLine("Transcription Complete.");
+    }
+
+    private static async Task OpenAI_ITranscriptionClient_FileNonStreamingExtension()
+    {
+        using var client = new OpenAITranscriptionClient(s_apiKey);
+        var fileName = "ian.wav";
+        using var fileStream = File.OpenRead(fileName);
+
+        Console.WriteLine("Transcription Started");
+        var completion = await client.TranscribeAsync(fileStream, new() 
+        {  
+            SourceFileName = fileName,
+        }, CancellationToken.None);
         Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Content!.Transcription}");
         Console.WriteLine("Transcription Complete.");
     }
@@ -49,6 +66,32 @@ internal sealed class Program
         {
             Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
         }
+    }
+
+    private static async Task OpenAI_ITranscriptionClient_MicrophoneStreamingExtension()
+    {
+        using var client = new OpenAITranscriptionClient(s_apiKey);
+        var options = new TranscriptionOptions
+        {
+            SourceSampleRate = 16_000,
+            SourceFileName = "microphone.wav"
+        };
+
+        // Upload microphone audio for 5 seconds
+        using var soxProcess = GetMicrophoneStreamProcess(options);
+        Console.WriteLine("Recording Started, press Ctrl+C to stop recording");
+        soxProcess.Start();
+
+        Console.WriteLine("Transcription Started");
+
+        await foreach (var update in client.TranscribeStreamingAsync(soxProcess.StandardOutput.BaseStream, options, CancellationToken.None))
+        {
+            Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
+        }
+
+        Console.WriteLine("Transcription Complete");
+
+        soxProcess.Kill();
     }
 
     private static async Task OpenAI_ITranscriptionClient_FileStreaming()
@@ -78,10 +121,32 @@ internal sealed class Program
 
     private static async IAsyncEnumerable<AudioContent> UploadMicrophoneAudio(TranscriptionOptions options, TimeSpan duration)
     {
+        using var soxProcess = GetMicrophoneStreamProcess(options);
+
+        var stopwatch = Stopwatch.StartNew();
+        soxProcess.Start();
+        var soxOutputStream = soxProcess.StandardOutput.BaseStream;
+
+        await foreach (var update in new AsyncEnumerableAudioStream(soxOutputStream, "audio/wav"))
+        {
+            yield return update;
+
+            if (stopwatch.Elapsed > duration)
+            {
+                break;
+            }
+        }
+
+        soxProcess.Kill();
+    }
+
+    private static Process GetMicrophoneStreamProcess(TranscriptionOptions options)
+    {
         var cts = new CancellationTokenSource();
         var ct = cts.Token;
 
-        Console.CancelKeyPress += (sender, e) => cts.Cancel();
+        Console.CancelKeyPress += (sender, e) 
+            => cts.Cancel();
 
         var soxArguments = string.Join(' ', [
            // --default-device doesn't work on Windows
@@ -95,7 +160,7 @@ internal sealed class Program
             "-" // pipe
        ]);
 
-        using var soxProcess = new Process
+        var soxProcess = new Process
         {
             StartInfo = new ProcessStartInfo
             {
@@ -107,19 +172,6 @@ internal sealed class Program
             }
         };
 
-        var stopwatch = Stopwatch.StartNew();
-        soxProcess.Start();
-        var soxOutputStream = soxProcess.StandardOutput.BaseStream;
-
-        await foreach (var update in new AsyncEnumerableAudioStream(soxOutputStream, "audio/wav"))
-        {
-            yield return update;
-            if (stopwatch.Elapsed > duration)
-            {
-                break;
-            }
-        }
-
-        soxProcess.Kill();
+        return soxProcess;
     }
 }
