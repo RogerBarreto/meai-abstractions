@@ -3,7 +3,6 @@
 using ConsoleAssemblyAI;
 using MEAI.Abstractions;
 using Microsoft.Extensions.AI;
-using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -40,11 +39,17 @@ internal sealed partial class WhisperTranscriptionClient : IAudioTranscriptionCl
 
         TranscriptionCompletion completion = new();
 
-        using var processor = _factory.CreateBuilder().WithLanguage("auto").Build();
+        if (_processor is null)
+        {
+            _processor = _factory
+                .CreateBuilder()
+                .WithLanguage("auto")
+                .Build();
+        }
 
         StringBuilder fullTranscription = new();
         List<SegmentData> segments = [];
-        await foreach (var segment in processor.ProcessAsync(audioContentsStream, cancellationToken))
+        await foreach (var segment in _processor.ProcessAsync(audioContentsStream, cancellationToken))
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -74,7 +79,8 @@ internal sealed partial class WhisperTranscriptionClient : IAudioTranscriptionCl
 
         if (_processor is null)
         {
-            this._processor = _factory.CreateBuilder()
+            this._processor = _factory
+                .CreateBuilder()
                 .WithLanguage("auto")
                 .Build();
         }

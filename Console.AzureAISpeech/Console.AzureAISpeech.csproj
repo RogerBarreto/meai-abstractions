@@ -9,15 +9,22 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AssemblyAI" Version="1.2.0" />
+    <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.21.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\MEAI.Abstractions\MEAI.Abstractions.csproj" />
   </ItemGroup>
-	<ItemGroup>
-		<Compile Include="$(RepoRoot)/MEAI.Abstractions/Utilities/*.cs" Link="InternalUtilities/%(RecursiveDir)%(Filename)%(Extension)" />
-	</ItemGroup>
+
+  <ItemGroup>
+	<Compile Include="$(RepoRoot)/MEAI.Abstractions/Utilities/*.cs" Link="InternalUtilities/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="ian.wav">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 
 </Project>

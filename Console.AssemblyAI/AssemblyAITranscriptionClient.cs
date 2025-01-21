@@ -1,13 +1,7 @@
 ﻿namespace ConsoleAssemblyAI;
 
 using AssemblyAI;
-using AssemblyAI.Realtime;
 using AssemblyAI.Transcripts;
-using Microsoft.Extensions.AI;
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 
 internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptionClient
 {
