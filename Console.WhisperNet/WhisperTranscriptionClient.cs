@@ -3,7 +3,6 @@
 using ConsoleAssemblyAI;
 using MEAI.Abstractions;
 using Microsoft.Extensions.AI;
-using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;

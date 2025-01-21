@@ -61,7 +61,7 @@ internal class Program
         {
             await foreach (var update in client.TranscribeStreamingAsync(audioContents, new(), CancellationToken.None))
             {
-                Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime} : {update.Transcription} ");
+                Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
             }
         }
 

@@ -1,6 +1,5 @@
 ﻿namespace ConsoleAssemblyAI;
 
-using AssemblyAI;
 using AssemblyAI.Transcripts;
 using MEAI.Abstractions;
 using Microsoft.Extensions.AI;

@@ -1,8 +1,6 @@
 ﻿namespace ConsoleAssemblyAI;
 
-using AssemblyAI;
 using AssemblyAI.Realtime;
-using AssemblyAI.Transcripts;
 using Microsoft.Extensions.AI;
 using System;
 using System.Collections.Generic;
@@ -108,7 +106,7 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
             }
             else
             {
-                // After the upload ends wait for a bit before checking for new updates
+                // Prevent wasting CPU cycles for polling
                 await Task.Delay(100);
             }
 

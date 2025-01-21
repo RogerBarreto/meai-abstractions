@@ -1,6 +1,3 @@
-using System;
-using System.IO;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
@@ -24,12 +21,8 @@ internal sealed class Program
         s_subscriptionKey = config["AzureAISpeech:SubscriptionKey"]!;
         s_region = config["AzureAISpeech:Region"]!;
 
-        // await AzureAI_ITranscriptionClient_MicrophoneStreaming();
-        // await AzureAI_Streaming();
-        // await AzureAI_NonStreaming();
-        // await AzureAI_ITranscriptionClient_NonStreaming();
-
         await AzureAI_ITranscriptionClient_NonStreaming();
+        // await AzureAI_ITranscriptionClient_MicrophoneStreaming();
     }
 
     private static async Task AzureAI_ITranscriptionClient_NonStreaming()
@@ -39,8 +32,16 @@ internal sealed class Program
 
         Console.WriteLine("Transcription Started");
         var completion = await client.TranscribeAsync(audioContents, new(), CancellationToken.None);
-        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime} : {completion.Content!.Transcription}");
+        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Content!.Transcription}");
         Console.WriteLine("Transcription Complete.");
+    }
+    private static async IAsyncEnumerable<AudioContent> UpdateAudioFile(string filePath)
+    {
+        using var fileStream = File.OpenRead(filePath);
+        await foreach (var update in new AsyncEnumerableAudioStream(fileStream))
+        {
+            yield return update;
+        }
     }
 
     private static async Task AzureAI_MicrophoneManual()
@@ -51,11 +52,7 @@ internal sealed class Program
 
         var audioEnumerable = UploadMicrophoneAudio(new TranscriptionOptions
         {
-            SourceSampleRate = 16_000,
-            AdditionalProperties = new AdditionalPropertiesDictionary
-            {
-                { "DisablePartialTranscripts", true }
-            }
+            SourceSampleRate = 16_000
         });
 
         using var audioConfig = AudioConfig.FromStreamInput(audioConfigStream);
@@ -113,14 +110,16 @@ internal sealed class Program
         };
 
         soxProcess.Start();
-        var soxOutputStream = soxProcess.StandardOutput.BaseStream;
+        using var soxOutputStream = soxProcess.StandardOutput.BaseStream;
 
-        var buffer = new byte[4096];
-        var bytesRead = 0;
-        while ((bytesRead = await soxOutputStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+        await foreach (var update in new AsyncEnumerableAudioStream(soxOutputStream))
         {
-            if (ct.IsCancellationRequested) break;
-            yield return new AudioContent(buffer);
+            if (ct.IsCancellationRequested)
+            {
+                break;
+            }
+
+            yield return update;
         }
 
         soxProcess.Kill();
@@ -131,11 +130,7 @@ internal sealed class Program
         using var client = new AzureTranscriptionClient(s_subscriptionKey, s_region);
         var options = new TranscriptionOptions
         {
-            SourceSampleRate = 16_000,
-            AdditionalProperties = new AdditionalPropertiesDictionary
-            {
-                { "DisablePartialTranscripts", true }
-            }
+            SourceSampleRate = 16_000
         };
 
         var audioContents = UploadMicrophoneAudio(options);
@@ -145,19 +140,19 @@ internal sealed class Program
             switch (update.EventName)
             {
                 case "Recognizing":
-                    Console.WriteLine($"Recognizing: {update.Transcription} ");
+                    Console.WriteLine($"Recognizing: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
                     break;
                 case "Recognized":
-                    Console.WriteLine($"Recognized: {update.Transcription} ");
+                    Console.WriteLine($"Recognized: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
                     break;
                 case "NoMatch":
-                    Console.WriteLine($"NoMatch: {update.Transcription} ");
+                    Console.WriteLine($"NoMatch: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
                     break;
                 case "Canceled":
-                    Console.WriteLine($"Canceled: {update.Transcription} ");
+                    Console.WriteLine($"Canceled: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
                     break;
                 case "SessionStopped":
-                    Console.WriteLine($"SessionStopped: {update.Transcription} ");
+                    Console.WriteLine($"SessionStopped: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
                     break;
             }
         }
@@ -182,16 +177,16 @@ internal sealed class Program
             switch (update.EventName)
             {
                 case "Recognizing":
-                    Console.WriteLine($"Recognizing: {update.Transcription} ");
+                    Console.WriteLine($"Recognizing: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
                     break;
                 case "Recognized":
-                    Console.WriteLine($"Recognized: {update.Transcription} ");
+                    Console.WriteLine($"Recognized: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
                     break;
                 case "NoMatch":
-                    Console.WriteLine($"NoMatch: {update.Transcription} ");
+                    Console.WriteLine($"NoMatch: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
                     break;
                 case "Canceled":
-                    Console.WriteLine($"Canceled: {update.Transcription} ");
+                    Console.WriteLine($"Canceled: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
                     break;
                 case "SessionStopped":
                     Console.WriteLine($"SessionStopped: {update.Transcription} ");
@@ -199,19 +194,6 @@ internal sealed class Program
             }
         }
     }
-
-    private static async IAsyncEnumerable<AudioContent> UpdateAudioFile(string filePath)
-    {
-        using var fileStream = File.OpenRead(filePath);
-
-        var buffer = new byte[4096];
-        var bytesRead = 0;
-        while ((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-        {
-            yield return new AudioContent(buffer);
-        }
-    }
-
 
     private static Task AzureAI_Streaming()
     {
