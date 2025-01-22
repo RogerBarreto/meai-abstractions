@@ -1,4 +1,5 @@
-﻿using ConsoleWhisperNet;
+﻿using ConsoleUtilities;
+using ConsoleWhisperNet;
 using MEAI.Abstractions;
 using Microsoft.Extensions.AI;
 using System.Diagnostics;
@@ -15,7 +16,7 @@ internal class Program
         var ggmlType = GgmlType.LargeV3;
         var modelFileName = "ggml-large-v3.bin";
 
-        using var whisperLogger = LogProvider.AddConsoleLogging(WhisperLogLevel.Debug);
+        using var whisperLogger = LogProvider.AddConsoleLogging(WhisperLogLevel.Warning);
 
         // This section detects whether the "ggml-base.bin" file exists in our project disk. If it doesn't, it downloads it from the internet
         if (!File.Exists(modelFileName))
@@ -28,11 +29,15 @@ internal class Program
         ];
 
         // await Whisper_ITranscriptionClient_FileNonStreaming();
+        // await Whisper_ITranscriptionClient_FileNonStreamingExtension();
 
-        // await Whisper_ITranscriptionClient_FileStreaming();
-        // await Whisper_ITranscriptionClient_MicrophoneStreaming();
+        //await Whisper_ITranscriptionClient_FileStreaming();
+        //await Whisper_ITranscriptionClient_FileStreamingExtension();
 
-        await Whisper_Manual(modelFileName);
+        await Whisper_ITranscriptionClient_MicrophoneStreaming();
+        // await Whisper_ITranscriptionClient_MicrophoneStreamingExtension();
+
+        // await Whisper_Manual(modelFileName);
     }
 
     private static async Task Whisper_ITranscriptionClient_FileStreaming()
@@ -40,10 +45,25 @@ internal class Program
         var modelFile = "ggml-large-v3.bin";
         using var client = new WhisperTranscriptionClient(modelFile);
 
-        var audioContents = UploadAudioFile("barbara.wav");
+        var audioContents = UploadAudioFile("Resources/barbara.wav");
 
         Console.WriteLine("Transcription Started");
         await foreach (var update in client.TranscribeStreamingAsync(audioContents, new(), CancellationToken.None))
+        {
+            Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime} : {update.Transcription} ");
+        }
+        Console.WriteLine("Transcription Complete.");
+    }
+
+    private static async Task Whisper_ITranscriptionClient_FileStreamingExtension()
+    {
+        var modelFile = "ggml-large-v3.bin";
+        using var client = new WhisperTranscriptionClient(modelFile);
+
+        using var fileStream = File.OpenRead("Resources/barbara.wav");
+
+        Console.WriteLine("Transcription Started");
+        await foreach (var update in client.TranscribeStreamingAsync(fileStream, new(), CancellationToken.None))
         {
             Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime} : {update.Transcription} ");
         }
@@ -55,10 +75,23 @@ internal class Program
         var modelFile = "ggml-large-v3.bin";
         using var client = new WhisperTranscriptionClient(modelFile);
 
-        var audioContents = UploadAudioFile("barbara.wav");
+        var audioContents = UploadAudioFile("Resources/barbara.wav");
 
         Console.WriteLine("Transcription Started");
         var completion = await client.TranscribeAsync(audioContents, new(), CancellationToken.None);
+        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Content!.Transcription}");
+        Console.WriteLine("Transcription Complete.");
+    }
+
+    private static async Task Whisper_ITranscriptionClient_FileNonStreamingExtension()
+    {
+        var modelFile = "ggml-large-v3.bin";
+        using var client = new WhisperTranscriptionClient(modelFile);
+
+        using var fileStream = File.OpenRead("Resources/barbara.wav");
+
+        Console.WriteLine("Transcription Started");
+        var completion = await client.TranscribeAsync(fileStream, new(), CancellationToken.None);
         Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Content!.Transcription}");
         Console.WriteLine("Transcription Complete.");
     }
@@ -83,17 +116,45 @@ internal class Program
         Console.WriteLine("Transcription Complete.");
     }
 
+    private static async Task Whisper_ITranscriptionClient_MicrophoneStreamingExtension()
+    {
+        var modelFile = "ggml-large-v3.bin";
+        using var client = new WhisperTranscriptionClient(modelFile);
+
+        Console.WriteLine("Transcription Started");
+
+        // Whisper API doesn't support real-time, to achieve real-time behavior we need to record audio
+        // saving it in memory of X seconds and then send them to the API for transcription.
+        await foreach (var fileStream in UploadMicrophoneAudioStreamAsync(new TranscriptionOptions { SourceSampleRate = 16_000 }))
+        {
+            await foreach (var update in client.TranscribeStreamingAsync(fileStream, new(), CancellationToken.None))
+            {
+                Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
+            }
+        }
+
+        Console.WriteLine("Transcription Complete.");
+    }
+
     private static async IAsyncEnumerable<AudioContent> UploadAudioFile(string filePath)
     {
         using var fileStream = File.OpenRead(filePath);
-
-        await foreach (var update in new AsyncEnumerableAudioStream(fileStream))
+        await foreach (var update in ConsoleUtils.UploadStreamAsync(fileStream, "audio/wav"))
         {
             yield return update;
         }
     }
 
     private static async IAsyncEnumerable<IAsyncEnumerable<AudioContent>> UploadMicrophoneAudio(TranscriptionOptions options)
+    {
+        await foreach (var fileStream in UploadMicrophoneAudioStreamAsync(options))
+        {
+            yield return ConsoleUtils.UploadStreamAsync(fileStream, "audio/wav");
+            fileStream.Dispose();
+        }
+    }
+
+    private static async IAsyncEnumerable<Stream> UploadMicrophoneAudioStreamAsync(TranscriptionOptions options)
     {
         var cts = new CancellationTokenSource();
         var ct = cts.Token;
@@ -110,7 +171,7 @@ internal class Program
             "--bits 16",
             "--type wav",
             "output.wav",
-            "trim 0 5"
+            "trim 0 5" // Record and save to a file for every 5 seconds
        ]);
 
         using var soxProcess = new Process
@@ -146,23 +207,12 @@ internal class Program
         {
             if (intervalStreams.Count > 0)
             {
-                yield return UploadMicrophoneAudioChunk(intervalStreams.Dequeue());
+                yield return new MemoryStream(intervalStreams.Dequeue());
             }
             else
             {
                 await Task.Delay(100);
             }
-        }
-    }
-
-    static async IAsyncEnumerable<AudioContent> UploadMicrophoneAudioChunk(byte[] audioData)
-    {
-        var buffer = new byte[4096];
-        var bytesRead = 0;
-        using var audioStream = new MemoryStream(audioData);
-        while ((bytesRead = await audioStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-        {
-            yield return new AudioContent(buffer);
         }
     }
 
@@ -177,7 +227,7 @@ internal class Program
     private static async Task Whisper_Manual(string modelFileName)
     {
         Console.WriteLine("Hello, World!");
-        var wavFilename = "fernanda.wav";
+        var wavFilename = "Resources/fernanda.wav";
 
         // This section creates the whisperFactory object which is used to create the processor object.
         using var whisperFactory = WhisperFactory.FromPath(modelFileName);

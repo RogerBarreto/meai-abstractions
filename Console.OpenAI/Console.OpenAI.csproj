@@ -14,17 +14,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ConsoleUtilities\ConsoleUtilities.csproj" />
     <ProjectReference Include="..\MEAI.Abstractions\MEAI.Abstractions.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Include="$(RepoRoot)/MEAI.Abstractions/Utilities/*.cs" Link="InternalUtilities/%(RecursiveDir)%(Filename)%(Extension)" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="ian.wav">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<Compile Include="$(RepoRoot)/MEAI.Abstractions/Utilities/*.cs" Link="InternalUtilities/%(RecursiveDir)%(Filename)%(Extension)" />
+		<None Include="$(RepoRoot)/ConsoleUtilities/Resources/*.*" Link="Resources/%(RecursiveDir)%(Filename)%(Extension)">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 
 </Project>

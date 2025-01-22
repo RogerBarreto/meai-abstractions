@@ -1,8 +1,6 @@
-using Microsoft.Extensions.Configuration;
+using ConsoleUtilities;
 using MEAI.Abstractions;
-using Microsoft.Extensions.AI;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace ConsoleOpenAI;
 
@@ -18,7 +16,7 @@ internal sealed partial class Program
         };
 
         // Upload microphone audio for 5 seconds
-        using var soxProcess = GetMicrophoneStreamProcess(options);
+        using var soxProcess = ConsoleUtils.GetMicrophoneStreamProcess(options, out var cancellationToken);
         using MemoryStream memoryStream = new();
 
         var stopWatch = Stopwatch.StartNew();
@@ -31,11 +29,11 @@ internal sealed partial class Program
         {
             while (true)
             {
-                // Atempting to pass the BaseStream and killing the process after 5 sec corrupts the stream,
+                // Attempting to pass the BaseStream and killing the process after 5 sec corrupts the stream,
                 // so we need to copy the stream to a MemoryStream
 
                 await soxProcess.StandardOutput.BaseStream.CopyToAsync(memoryStream);
-                if (stopWatch.Elapsed > TimeSpan.FromSeconds(secondsRecording))
+                if (cancellationToken.IsCancellationRequested || stopWatch.Elapsed > TimeSpan.FromSeconds(secondsRecording))
                 {
                     soxProcess.Kill();
                 }

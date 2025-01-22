@@ -5,6 +5,7 @@ using MEAI.Abstractions;
 using Microsoft.Extensions.AI;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using ConsoleUtilities;
 
 internal sealed class Program
 {
@@ -20,9 +21,13 @@ internal sealed class Program
         s_subscriptionKey = config["AzureAISpeech:SubscriptionKey"]!;
         s_region = config["AzureAISpeech:Region"]!;
 
-        await AzureAI_ITranscriptionClient_FileNonStreaming();
+        // await AzureAI_ITranscriptionClient_FileNonStreaming();
+        //await AzureAI_ITranscriptionClient_FileNonStreamingExtension();
+
+        //await AzureAI_ITranscriptionClient_FileStreaming();
+        await AzureAI_ITranscriptionClient_FileStreamingExtension();
+
         // await AzureAI_ITranscriptionClient_MicrophoneStreaming();
-        // await AzureAI_ITranscriptionClient_FileStreaming();
 
         // await AzureAI_MicrophoneManual();
     }
@@ -30,20 +35,25 @@ internal sealed class Program
     private static async Task AzureAI_ITranscriptionClient_FileNonStreaming()
     {
         using var client = new AzureTranscriptionClient(s_subscriptionKey, s_region);
-        var audioContents = UploadAudioFile("ian.wav");
+
+        var audioContents = ConsoleUtils.UploadAudioFileAsync("Resources/ian.wav", "audio/wav");
 
         Console.WriteLine("Transcription Started");
         var completion = await client.TranscribeAsync(audioContents, new(), CancellationToken.None);
         Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Content!.Transcription}");
         Console.WriteLine("Transcription Complete.");
     }
-    private static async IAsyncEnumerable<AudioContent> UploadAudioFile(string filePath)
+
+    private static async Task AzureAI_ITranscriptionClient_FileNonStreamingExtension()
     {
-        using var fileStream = File.OpenRead(filePath);
-        await foreach (var update in new AsyncEnumerableAudioStream(fileStream))
-        {
-            yield return update;
-        }
+        using var client = new AzureTranscriptionClient(s_subscriptionKey, s_region);
+
+        using var fileStream = File.OpenRead("Resources/ian.wav");
+
+        Console.WriteLine("Transcription Started");
+        var completion = await client.TranscribeAsync(fileStream, new(), CancellationToken.None);
+        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Content!.Transcription}");
+        Console.WriteLine("Transcription Complete.");
     }
 
     private static async Task AzureAI_MicrophoneManual()
@@ -76,47 +86,23 @@ internal sealed class Program
             }
         }
 
+        Console.WriteLine("Transcription Started");
         var speechRecognitionResult = await speechRecognizer.RecognizeOnceAsync();
         Console.WriteLine($"RECOGNIZED: Text={speechRecognitionResult.Text}");
+
+        Console.WriteLine("Transcription Complete");
     }
 
     private static async IAsyncEnumerable<AudioContent> UploadMicrophoneAudio(TranscriptionOptions options)
     {
-        var cts = new CancellationTokenSource();
-        var ct = cts.Token;
-
-        Console.CancelKeyPress += (sender, e) => cts.Cancel();
-
-        var soxArguments = string.Join(' ', [
-           // --default-device doesn't work on Windows
-           RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-t waveaudio default" : "--default-device",
-            "--no-show-progress",
-            $"--rate {options.SourceSampleRate}",
-            "--channels 1",
-            "--encoding signed-integer",
-            "--bits 16",
-            "--type wav",
-            "-" // pipe
-       ]);
-
-        using var soxProcess = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = "sox",
-                Arguments = soxArguments,
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            }
-        };
+        using var soxProcess = ConsoleUtils.GetMicrophoneStreamProcess(options, out var cancellationToken);
 
         soxProcess.Start();
         using var soxOutputStream = soxProcess.StandardOutput.BaseStream;
 
-        await foreach (var update in new AsyncEnumerableAudioStream(soxOutputStream))
+        await foreach (var update in ConsoleUtils.UploadStreamAsync(soxOutputStream, "audio/wav"))
         {
-            if (ct.IsCancellationRequested)
+            if (cancellationToken.IsCancellationRequested)
             {
                 break;
             }
@@ -137,27 +123,12 @@ internal sealed class Program
 
         var audioContents = UploadMicrophoneAudio(options);
 
+        Console.WriteLine("Transcription Started");
         await foreach (var update in client.TranscribeStreamingAsync(audioContents, options, CancellationToken.None))
         {
-            switch (update.EventName)
-            {
-                case "Recognizing":
-                    Console.WriteLine($"Recognizing: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
-                    break;
-                case "Recognized":
-                    Console.WriteLine($"Recognized: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
-                    break;
-                case "NoMatch":
-                    Console.WriteLine($"NoMatch: [{update.StartTime} --> {update.EndTime}] : {update.Message} ");
-                    break;
-                case "Canceled":
-                    Console.WriteLine($"Canceled: [{update.StartTime} --> {update.EndTime}] : {update.Message} ");
-                    break;
-                case "SessionStopped":
-                    Console.WriteLine($"SessionStopped: [{update.StartTime} --> {update.EndTime}] : {update.Message} ");
-                    break;
-            }
+            HandleAsyncUpdates(update);
         }
+        Console.WriteLine("Transcription Complete");
     }
 
     private static async Task AzureAI_ITranscriptionClient_FileStreaming()
@@ -168,28 +139,52 @@ internal sealed class Program
             SourceSampleRate = 16_000
         };
 
-        var audioContents = UploadAudioFile("ian.wav");
+        var audioContents = ConsoleUtils.UploadAudioFileAsync("Resources/ian.wav", "audio/wav");
 
+        Console.WriteLine("Transcription Started");
         await foreach (var update in client.TranscribeStreamingAsync(audioContents, fileOptions, CancellationToken.None))
         {
-            switch (update.EventName)
-            {
-                case "Recognizing":
-                    Console.WriteLine($"Recognizing: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
-                    break;
-                case "Recognized":
-                    Console.WriteLine($"Recognized: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
-                    break;
-                case "NoMatch":
-                    Console.WriteLine($"NoMatch: [{update.StartTime} --> {update.EndTime}] : {update.Message} ");
-                    break;
-                case "Canceled":
-                    Console.WriteLine($"Canceled: [{update.StartTime} --> {update.EndTime}] : {update.Message} ");
-                    break;
-                case "SessionStopped":
-                    Console.WriteLine($"SessionStopped: {update.Message} ");
-                    break;
-            }
+            HandleAsyncUpdates(update);
+        }
+        Console.WriteLine("Transcription Complete");
+    }
+
+    private static async Task AzureAI_ITranscriptionClient_FileStreamingExtension()
+    {
+        using var client = new AzureTranscriptionClient(s_subscriptionKey, s_region);
+        var fileOptions = new TranscriptionOptions
+        {
+            SourceSampleRate = 16_000
+        };
+
+        using var fileStream = File.OpenRead("Resources/ian.wav");
+        Console.WriteLine("Transcription Started");
+        await foreach (var update in client.TranscribeStreamingAsync(fileStream, fileOptions, CancellationToken.None))
+        {
+            HandleAsyncUpdates(update);
+        }
+        Console.WriteLine("Transcription Complete");
+    }
+
+    private static void HandleAsyncUpdates(StreamingTranscriptionUpdate update)
+    {
+        switch (update.EventName)
+        {
+            case "Recognizing":
+                Console.WriteLine($"Recognizing: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
+                break;
+            case "Recognized":
+                Console.WriteLine($"Recognized: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
+                break;
+            case "NoMatch":
+                Console.WriteLine($"NoMatch: [{update.StartTime} --> {update.EndTime}] : {update.Message} ");
+                break;
+            case "Canceled":
+                Console.WriteLine($"Canceled: [{update.StartTime} --> {update.EndTime}] : {update.Message} ");
+                break;
+            case "SessionStopped":
+                Console.WriteLine($"SessionStopped: {update.Message} ");
+                break;
         }
     }
 }

@@ -21,7 +21,7 @@ public static class AudioTranscriptionClientExtensions
         TranscriptionOptions? options = null,
         CancellationToken cancellationToken = default)
         => client.TranscribeAsync(
-            new AsyncEnumerableAudioStream(audioStream, ToMediaType(options?.SourceFileName)), 
+            audioStream.ToAsyncEnumerable(ToMediaType(options?.SourceFileName)), 
             options, 
             cancellationToken);
     
@@ -32,7 +32,7 @@ public static class AudioTranscriptionClientExtensions
         TranscriptionOptions? options = null,
         CancellationToken cancellationToken = default)
         => client.TranscribeStreamingAsync(
-            new AsyncEnumerableAudioStream(audioStream, ToMediaType(options?.SourceFileName)),
+            audioStream.ToAsyncEnumerable(ToMediaType(options?.SourceFileName)),
             options,
             cancellationToken);
 
@@ -53,13 +53,23 @@ public static class AudioTranscriptionClientExtensions
         return $"audio/{extension}";
     }
 
+    private static async IAsyncEnumerable<AudioContent> ToAsyncEnumerable(this Stream audioStream, string? mediaType = null)
+    {
+        var buffer = new byte[4096];
+        var bytesRead = 0;
+        while ((bytesRead = await audioStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+        {
+            yield return new AudioContent(buffer, mediaType);
+        }
+    }
+
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-    public static async IAsyncEnumerable<T> ToAsyncEnumerable<T>(this IEnumerable<T> source)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+    private static async IAsyncEnumerable<T> ToAsyncEnumerable<T>(this IEnumerable<T> source)
     {
         foreach (var item in source)
         {
             yield return item;
         }
     }
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
 }

@@ -26,8 +26,7 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
         }
         else
         {
-            using var audioFileStream = new AudioContentAsyncEnumerableStream(audioContent, cancellationToken);
-
+            using var audioFileStream = new AudioContentAsyncEnumerableStream(audioContent, firstChunk, cancellationToken);
             var fileUpload = await this._client.Files.UploadAsync(audioFileStream, new(), cancellationToken);
 
             transcript = await this._client.Transcripts.TranscribeAsync(

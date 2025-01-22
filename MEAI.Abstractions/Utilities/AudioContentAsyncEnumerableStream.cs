@@ -2,6 +2,7 @@
 using Microsoft.Extensions.AI;
 
 namespace MEAI.Abstractions;
+
 internal class AudioContentAsyncEnumerableStream : Stream
 {
     private readonly IAsyncEnumerator<AudioContent> _enumerator;
@@ -9,6 +10,7 @@ internal class AudioContentAsyncEnumerableStream : Stream
     private byte[] _remainingData;
     private int _remainingDataOffset;
     private long _position;
+    private AudioContent? _firstChunk;
 
     internal AudioContentAsyncEnumerableStream(IAsyncEnumerable<AudioContent> asyncEnumerable, CancellationToken cancellationToken = default)
     {
@@ -16,6 +18,12 @@ internal class AudioContentAsyncEnumerableStream : Stream
         this._remainingData = Array.Empty<byte>();
         this._remainingDataOffset = 0;
         this._position = 0;
+    }
+
+    internal AudioContentAsyncEnumerableStream(IAsyncEnumerable<AudioContent> asyncEnumerable, AudioContent firstChunk, CancellationToken cancellationToken = default)
+        : this(asyncEnumerable, cancellationToken)
+    {
+        this._firstChunk = firstChunk;
     }
 
     public override bool CanRead => true;
@@ -62,6 +70,15 @@ internal class AudioContentAsyncEnumerableStream : Stream
             }
             else
             {
+                // Special case when the first chunk was skipped and needs to be read
+                if (this._position == 0 && _firstChunk is not null && _firstChunk.Data.HasValue)
+                {
+                    this._remainingData = this._firstChunk.Data.Value.ToArray();
+                    this._remainingDataOffset = 0;
+
+                    continue;
+                }
+
                 if (!await this._enumerator.MoveNextAsync().ConfigureAwait(false))
                 {
                     this._isCompleted = true;
@@ -93,6 +110,11 @@ internal class AudioContentAsyncEnumerableStream : Stream
     }
 
     public override void Write(byte[] buffer, int offset, int count)
+    {
+        throw new NotImplementedException();
+    }
+
+    internal void AddFirstChunk(AudioContent firstChunk)
     {
         throw new NotImplementedException();
     }
