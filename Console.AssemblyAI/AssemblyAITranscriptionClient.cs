@@ -20,7 +20,7 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
     {
     }
 
-    private TranscriptOptionalParams ToTranscriptOptionalParams(TranscriptionOptions? transcriptionOptions)
+    private TranscriptOptionalParams ToTranscriptOptionalParams(AudioTranscriptionOptions? transcriptionOptions)
     {
         TranscriptOptionalParams request = new();
 

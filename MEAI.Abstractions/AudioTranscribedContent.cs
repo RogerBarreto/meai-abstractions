@@ -2,9 +2,9 @@
 using Microsoft.Extensions.AI;
 
 namespace MEAI.Abstractions;
-public class TranscribedContent : AIContent
+public class AudioTranscribedContent : AIContent
 {
-    public TranscribedContent(string transcription)
+    public AudioTranscribedContent(string transcription)
     {
         this.Transcription = transcription;
     }

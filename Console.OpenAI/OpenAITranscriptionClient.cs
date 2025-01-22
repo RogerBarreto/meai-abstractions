@@ -19,7 +19,7 @@ public class OpenAITranscriptionClient : IAudioTranscriptionClient
     {
     }
 
-    public async Task<TranscriptionCompletion> TranscribeAsync(IAsyncEnumerable<AudioContent> audioContent, TranscriptionOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<TranscriptionCompletion> TranscribeAsync(IAsyncEnumerable<AudioContent> audioContent, MEAI.Abstractions.AudioTranscriptionOptions? options = null, CancellationToken cancellationToken = default)
     {
         var enumerator = audioContent.GetAsyncEnumerator(cancellationToken);
         await enumerator.MoveNextAsync();
@@ -58,20 +58,20 @@ public class OpenAITranscriptionClient : IAudioTranscriptionClient
         return new TranscriptionCompletion
         {
             RawRepresentation = transcriptionResult,
-            Content = new TranscribedContent(transcriptionResult.Text),
+            Content = new AudioTranscribedContent(transcriptionResult.Text),
             StartTime = TimeSpan.Zero,
             EndTime = stopwatch.Elapsed
         };
     }
 
-    public async IAsyncEnumerable<StreamingTranscriptionUpdate> TranscribeStreamingAsync(
-        IAsyncEnumerable<AudioContent> audioContent, 
-        TranscriptionOptions? options = null, 
+    public async IAsyncEnumerable<StreamingAudioTranscriptionUpdate> TranscribeStreamingAsync(
+        IAsyncEnumerable<AudioContent> audioContent,
+        MEAI.Abstractions.AudioTranscriptionOptions? options = null, 
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var transcriptionCompletion = await this.TranscribeAsync(audioContent, options, cancellationToken);
 
-        yield return new StreamingTranscriptionUpdate
+        yield return new StreamingAudioTranscriptionUpdate
         {
             EventName = "TranscriptionComplete",
             RawRepresentation = transcriptionCompletion.RawRepresentation,
@@ -81,7 +81,7 @@ public class OpenAITranscriptionClient : IAudioTranscriptionClient
         };
     }
 
-    private static AudioTranscriptionOptions ToOpenAIOptions(TranscriptionOptions? options) 
+    private static OpenAI.Audio.AudioTranscriptionOptions ToOpenAIOptions(MEAI.Abstractions.AudioTranscriptionOptions? options) 
         => new(); // To be implemented
 
     // flac, mp3, mp4, mpeg, mpga, m4a, ogg, wav, or webm.

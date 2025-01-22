@@ -7,11 +7,11 @@ public interface IAudioTranscriptionClient : IDisposable
 {
     Task<TranscriptionCompletion> TranscribeAsync(
         IAsyncEnumerable<AudioContent> audioContents, 
-        TranscriptionOptions? options = null, 
+        AudioTranscriptionOptions? options = null, 
         CancellationToken cancellationToken = default);
 
-    IAsyncEnumerable<StreamingTranscriptionUpdate> TranscribeStreamingAsync(
+    IAsyncEnumerable<StreamingAudioTranscriptionUpdate> TranscribeStreamingAsync(
         IAsyncEnumerable<AudioContent> audioContents,
-        TranscriptionOptions? options = null,
+        AudioTranscriptionOptions? options = null,
         CancellationToken cancellationToken = default);
 }

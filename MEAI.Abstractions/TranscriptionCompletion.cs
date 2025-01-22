@@ -12,7 +12,7 @@ public class TranscriptionCompletion
     /// <summary>Gets or sets the model ID used in the creation of the chat completion.</summary>
     public string? ModelId { get; set; }
 
-    public TranscribedContent? Content { get; set; }
+    public AudioTranscribedContent? Content { get; set; }
 
     public TimeSpan? StartTime { get; set; }
 

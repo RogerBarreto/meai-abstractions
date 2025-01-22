@@ -7,7 +7,7 @@ namespace ConsoleUtilities;
 
 public class ConsoleUtils
 {
-    public static Process GetMicrophoneStreamProcess(TranscriptionOptions options, out CancellationToken ct)
+    public static Process GetMicrophoneStreamProcess(AudioTranscriptionOptions options, out CancellationToken ct)
     {
         var cts = new CancellationTokenSource();
         ct = cts.Token;

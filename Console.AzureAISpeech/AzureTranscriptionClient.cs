@@ -20,7 +20,7 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
     {
     }
 
-    public async Task<TranscriptionCompletion> TranscribeAsync(IAsyncEnumerable<AudioContent> audioContents, TranscriptionOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<TranscriptionCompletion> TranscribeAsync(IAsyncEnumerable<AudioContent> audioContents, AudioTranscriptionOptions? options = null, CancellationToken cancellationToken = default)
     {
        
         var speechConfig = SpeechConfig.FromSubscription(this._subscriptionKey, this._region);
@@ -69,7 +69,7 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
         {
             RawRepresentation = speechRecognitionResult,
             CompletionId = speechRecognitionResult.ResultId,
-            Content = new TranscribedContent(speechRecognitionResult.Text),
+            Content = new AudioTranscribedContent(speechRecognitionResult.Text),
             StartTime = TimeSpan.Zero,
             EndTime = speechRecognitionResult.Duration,
             AdditionalProperties = new AdditionalPropertiesDictionary
@@ -79,7 +79,7 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
         };
     }
 
-    public async IAsyncEnumerable<StreamingTranscriptionUpdate> TranscribeStreamingAsync(IAsyncEnumerable<AudioContent> audioContents, TranscriptionOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<StreamingAudioTranscriptionUpdate> TranscribeStreamingAsync(IAsyncEnumerable<AudioContent> audioContents, AudioTranscriptionOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var speechConfig = SpeechConfig.FromSubscription(this._subscriptionKey, this._region);
         speechConfig.SpeechRecognitionLanguage = options?.SourceLanguage ?? "en-US";
@@ -122,14 +122,14 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
         await Task.Delay(1000);
 
         var stopRecognition = new TaskCompletionSource<int>();
-        Queue<StreamingTranscriptionUpdate> updates = new();
+        Queue<StreamingAudioTranscriptionUpdate> updates = new();
 
         using var speechRecognizer = new SpeechRecognizer(speechConfig, audioConfig);
 
         speechRecognizer.Recognizing += (s, e) =>
         {
             var startTime = TimeSpan.FromTicks(e.Result.OffsetInTicks);
-            updates.Enqueue(new StreamingTranscriptionUpdate
+            updates.Enqueue(new StreamingAudioTranscriptionUpdate
             {
                 StartTime = startTime,
                 EndTime = GetEndTime(startTime, e.Result.Duration),
@@ -144,7 +144,7 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
             if (e.Result.Reason == ResultReason.RecognizedSpeech)
             {
                 var startTime = TimeSpan.FromTicks(e.Result.OffsetInTicks);
-                updates.Enqueue(new StreamingTranscriptionUpdate
+                updates.Enqueue(new StreamingAudioTranscriptionUpdate
                 {
                     StartTime = startTime,
                     EndTime = GetEndTime(startTime, e.Result.Duration),
@@ -156,7 +156,7 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
             else if (e.Result.Reason == ResultReason.NoMatch)
             {
                 var startTime = TimeSpan.FromTicks(e.Result.OffsetInTicks);
-                updates.Enqueue(new StreamingTranscriptionUpdate
+                updates.Enqueue(new StreamingAudioTranscriptionUpdate
                 {
                     StartTime = startTime,
                     EndTime = GetEndTime(startTime, e.Result.Duration),
@@ -173,7 +173,7 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
                     ? TimeSpan.MaxValue
                     : TimeSpan.FromTicks((long)e.Offset);
 
-            updates.Enqueue(new StreamingTranscriptionUpdate
+            updates.Enqueue(new StreamingAudioTranscriptionUpdate
             {
                 StartTime = canceledTime,
                 EndTime = canceledTime,
@@ -189,7 +189,7 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
         {
             sessionStopwatch.Stop();
 
-            updates.Enqueue(new StreamingTranscriptionUpdate
+            updates.Enqueue(new StreamingAudioTranscriptionUpdate
             {
                 StartTime = TimeSpan.Zero,
                 EndTime = sessionStopwatch.Elapsed,

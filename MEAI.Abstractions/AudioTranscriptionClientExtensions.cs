@@ -8,7 +8,7 @@ public static class AudioTranscriptionClientExtensions
     public static Task<TranscriptionCompletion> TranscribeAsync(
         this IAudioTranscriptionClient client,
         AudioContent audioContent, 
-        TranscriptionOptions? options = null, 
+        AudioTranscriptionOptions? options = null, 
         CancellationToken cancellationToken = default)
     {
         IEnumerable<AudioContent> audioContents = [audioContent];
@@ -18,7 +18,7 @@ public static class AudioTranscriptionClientExtensions
     public static Task<TranscriptionCompletion> TranscribeAsync(
         this IAudioTranscriptionClient client,
         Stream audioStream,
-        TranscriptionOptions? options = null,
+        AudioTranscriptionOptions? options = null,
         CancellationToken cancellationToken = default)
         => client.TranscribeAsync(
             audioStream.ToAsyncEnumerable(ToMediaType(options?.SourceFileName)), 
@@ -26,10 +26,10 @@ public static class AudioTranscriptionClientExtensions
             cancellationToken);
     
 
-    public static IAsyncEnumerable<StreamingTranscriptionUpdate> TranscribeStreamingAsync(
+    public static IAsyncEnumerable<StreamingAudioTranscriptionUpdate> TranscribeStreamingAsync(
         this IAudioTranscriptionClient client,
         Stream audioStream,
-        TranscriptionOptions? options = null,
+        AudioTranscriptionOptions? options = null,
         CancellationToken cancellationToken = default)
         => client.TranscribeStreamingAsync(
             audioStream.ToAsyncEnumerable(ToMediaType(options?.SourceFileName)),

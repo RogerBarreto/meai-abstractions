@@ -10,7 +10,7 @@ internal sealed partial class Program
     private static async Task OpenAI_ITranscriptionClient_MicrophoneStreaming()
     {
         using var client = new OpenAITranscriptionClient(s_apiKey);
-        var options = new TranscriptionOptions
+        var options = new AudioTranscriptionOptions
         {
             SourceSampleRate = 16_000
         };
@@ -24,7 +24,7 @@ internal sealed partial class Program
         }
     }
 
-    private static async IAsyncEnumerable<AudioContent> UploadMicrophoneAudio(TranscriptionOptions options, TimeSpan duration)
+    private static async IAsyncEnumerable<AudioContent> UploadMicrophoneAudio(AudioTranscriptionOptions options, TimeSpan duration)
     {
         using var soxProcess = ConsoleUtils.GetMicrophoneStreamProcess(options, out var cancellationToken);
 

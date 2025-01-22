@@ -29,7 +29,7 @@ internal sealed partial class WhisperTranscriptionClient : IAudioTranscriptionCl
         }
     }
 
-    public async Task<TranscriptionCompletion> TranscribeAsync(IAsyncEnumerable<AudioContent> inputAudio, TranscriptionOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<TranscriptionCompletion> TranscribeAsync(IAsyncEnumerable<AudioContent> inputAudio, AudioTranscriptionOptions? options = null, CancellationToken cancellationToken = default)
     {
         using var audioContentsStream = new AudioContentAsyncEnumerableStream(inputAudio);
 
@@ -66,9 +66,9 @@ internal sealed partial class WhisperTranscriptionClient : IAudioTranscriptionCl
         return completion;
     }
 
-    public async IAsyncEnumerable<StreamingTranscriptionUpdate> TranscribeStreamingAsync(
+    public async IAsyncEnumerable<StreamingAudioTranscriptionUpdate> TranscribeStreamingAsync(
         IAsyncEnumerable<AudioContent> inputAudio, 
-        TranscriptionOptions? options = null, 
+        AudioTranscriptionOptions? options = null, 
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         using var audioContentsStream = new AudioContentAsyncEnumerableStream(inputAudio);
@@ -88,7 +88,7 @@ internal sealed partial class WhisperTranscriptionClient : IAudioTranscriptionCl
                 break;
             }
 
-            yield return new StreamingTranscriptionUpdate()
+            yield return new StreamingAudioTranscriptionUpdate()
             {
                 EventName = "Update",
                 RawRepresentation = segment,

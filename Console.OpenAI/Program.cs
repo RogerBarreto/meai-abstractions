@@ -52,7 +52,7 @@ internal sealed partial class Program
     private static async Task OpenAI_ITranscriptionClient_FileStreaming()
     {
         using var client = new OpenAITranscriptionClient(s_apiKey);
-        var fileOptions = new TranscriptionOptions
+        var fileOptions = new AudioTranscriptionOptions
         {
             SourceSampleRate = 16_000
         };

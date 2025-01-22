@@ -9,12 +9,12 @@ namespace ConsoleAssemblyAI;
 
 internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptionClient
 {
-    public async IAsyncEnumerable<StreamingTranscriptionUpdate> TranscribeStreamingAsync(
+    public async IAsyncEnumerable<StreamingAudioTranscriptionUpdate> TranscribeStreamingAsync(
         IAsyncEnumerable<AudioContent> audioUpdates, 
-        TranscriptionOptions? options = null, 
+        AudioTranscriptionOptions? options = null, 
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        Queue<StreamingTranscriptionUpdate> updates = [];
+        Queue<StreamingAudioTranscriptionUpdate> updates = [];
 
         using var transcriber = new RealtimeTranscriber(this.ToRealtimeTranscriberOptions(options));
 
@@ -25,7 +25,7 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
             message =>
             {
                 sessionTime.Start();
-                updates.Enqueue(new StreamingTranscriptionUpdate
+                updates.Enqueue(new StreamingAudioTranscriptionUpdate
                 {
                     RawRepresentation = message,
                     Message = $"Session begins: \n- Session ID: {message.SessionId}\n- Expires at: {message.ExpiresAt}",
@@ -37,7 +37,7 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
             closeEvent =>
             {
                 connectionOpen = false;
-                updates.Enqueue(new StreamingTranscriptionUpdate
+                updates.Enqueue(new StreamingAudioTranscriptionUpdate
                 {
                     RawRepresentation = closeEvent,
                     EventName = "Closed",
@@ -53,7 +53,7 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
                     return;
                 }
 
-                updates.Enqueue(new StreamingTranscriptionUpdate
+                updates.Enqueue(new StreamingAudioTranscriptionUpdate
                 {
                     StartTime = TimeSpan.FromMilliseconds(transcript.AudioStart),
                     EndTime = TimeSpan.FromMilliseconds(transcript.AudioEnd),
@@ -66,7 +66,7 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
         transcriber.FinalTranscriptReceived.Subscribe(
             transcript =>
             {
-                updates.Enqueue(new StreamingTranscriptionUpdate
+                updates.Enqueue(new StreamingAudioTranscriptionUpdate
                 {
                     StartTime = TimeSpan.FromMilliseconds(transcript.AudioStart),
                     EndTime = TimeSpan.FromMilliseconds(transcript.AudioEnd),
@@ -79,7 +79,7 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
         transcriber.ErrorReceived.Subscribe(
             error =>
             {
-                updates.Enqueue(new StreamingTranscriptionUpdate
+                updates.Enqueue(new StreamingAudioTranscriptionUpdate
                 {
                     RawRepresentation = error,
                     EventName = "ErrorReceived",
@@ -125,7 +125,7 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
         await transcriber.CloseAsync();
     }
 
-    private RealtimeTranscriberOptions ToRealtimeTranscriberOptions(TranscriptionOptions? transcriptionOptions)
+    private RealtimeTranscriberOptions ToRealtimeTranscriberOptions(AudioTranscriptionOptions? transcriptionOptions)
     {
         if (transcriptionOptions is not null)
         {

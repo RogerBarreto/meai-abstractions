@@ -4,14 +4,14 @@ using System.Text.Json.Serialization;
 
 namespace MEAI.Abstractions;
 
-public class StreamingTranscriptionUpdate
+public class StreamingAudioTranscriptionUpdate
 {
+    public required string EventName { get; set; }
+
     [JsonIgnore]
     public object? RawRepresentation { get; set; }
 
     public AdditionalPropertiesDictionary? AdditionalProperties { get; set; }
-
-    public string? ModelId { get; set; }
 
     public TimeSpan? StartTime { get; set; }
 
@@ -20,6 +20,4 @@ public class StreamingTranscriptionUpdate
     public string? Transcription { get; set; }
 
     public string? Message { get; set; }
-
-    public required string EventName { get; set; }
 }

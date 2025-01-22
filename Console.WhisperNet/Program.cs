@@ -34,8 +34,8 @@ internal class Program
         //await Whisper_ITranscriptionClient_FileStreaming();
         //await Whisper_ITranscriptionClient_FileStreamingExtension();
 
-        await Whisper_ITranscriptionClient_MicrophoneStreaming();
-        // await Whisper_ITranscriptionClient_MicrophoneStreamingExtension();
+        // await Whisper_ITranscriptionClient_MicrophoneStreaming();
+        await Whisper_ITranscriptionClient_MicrophoneStreamingExtension();
 
         // await Whisper_Manual(modelFileName);
     }
@@ -105,7 +105,7 @@ internal class Program
         
         // Whisper API doesn't support real-time, to achieve real-time behavior we need to record audio
         // saving it in memory of X seconds and then send them to the API for transcription.
-        await foreach (var audioContents in UploadMicrophoneAudio(new TranscriptionOptions { SourceSampleRate = 16_000 }))
+        await foreach (var audioContents in UploadMicrophoneAudio(new AudioTranscriptionOptions { SourceSampleRate = 16_000 }))
         {
             await foreach (var update in client.TranscribeStreamingAsync(audioContents, new(), CancellationToken.None))
             {
@@ -125,7 +125,7 @@ internal class Program
 
         // Whisper API doesn't support real-time, to achieve real-time behavior we need to record audio
         // saving it in memory of X seconds and then send them to the API for transcription.
-        await foreach (var fileStream in UploadMicrophoneAudioStreamAsync(new TranscriptionOptions { SourceSampleRate = 16_000 }))
+        await foreach (var fileStream in UploadMicrophoneAudioStreamAsync(new AudioTranscriptionOptions { SourceSampleRate = 16_000 }))
         {
             await foreach (var update in client.TranscribeStreamingAsync(fileStream, new(), CancellationToken.None))
             {
@@ -145,7 +145,7 @@ internal class Program
         }
     }
 
-    private static async IAsyncEnumerable<IAsyncEnumerable<AudioContent>> UploadMicrophoneAudio(TranscriptionOptions options)
+    private static async IAsyncEnumerable<IAsyncEnumerable<AudioContent>> UploadMicrophoneAudio(AudioTranscriptionOptions options)
     {
         await foreach (var fileStream in UploadMicrophoneAudioStreamAsync(options))
         {
@@ -154,7 +154,7 @@ internal class Program
         }
     }
 
-    private static async IAsyncEnumerable<Stream> UploadMicrophoneAudioStreamAsync(TranscriptionOptions options)
+    private static async IAsyncEnumerable<Stream> UploadMicrophoneAudioStreamAsync(AudioTranscriptionOptions options)
     {
         var cts = new CancellationTokenSource();
         var ct = cts.Token;

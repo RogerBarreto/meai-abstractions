@@ -23,22 +23,23 @@ internal sealed class Program
 
         s_apiKey = config["AssemblyAI:ApiKey"]!;
 
-        // await AssemblyAI_ITranscriptionClient_FileStreaming();
+        await AssemblyAI_ITranscriptionClient_FileStreaming();
+        await AssemblyAI_ITranscriptionClient_FileStreamingExtension();
 
-        // await AssemblyAI_ITranscriptionClient_MicrophoneStreaming();
+        await AssemblyAI_ITranscriptionClient_MicrophoneStreaming();
         await AssemblyAI_ITranscriptionClient_MicrophoneStreamingExtension();
 
-        // await AssemblyAI_ITranscriptionClient_NonStreaming();
-        // await AssemblyAI_ITranscriptionClient_NonStreamingExtension();
+        await AssemblyAI_ITranscriptionClient_NonStreaming();
+        await AssemblyAI_ITranscriptionClient_NonStreamingExtension();
 
-        // await AssemblyAI_Manual_Streaming();
-        // await AssemblyAI_Manual_NonStreaming();
+        await AssemblyAI_Manual_Streaming();
+        await AssemblyAI_Manual_NonStreaming();
     }
 
     private static async Task AssemblyAI_ITranscriptionClient_MicrophoneStreaming()
     {
         using var client = new AssemblyAITranscriptionClient(s_apiKey);
-        var options = new TranscriptionOptions
+        var options = new AudioTranscriptionOptions
         {
             SourceSampleRate = 16_000,
             AdditionalProperties = new AdditionalPropertiesDictionary
@@ -60,7 +61,7 @@ internal sealed class Program
     private static async Task AssemblyAI_ITranscriptionClient_MicrophoneStreamingExtension()
     {
         using var client = new AssemblyAITranscriptionClient(s_apiKey);
-        var options = new TranscriptionOptions
+        var options = new AudioTranscriptionOptions
         {
             SourceSampleRate = 16_000,
             AdditionalProperties = new AdditionalPropertiesDictionary
@@ -85,7 +86,7 @@ internal sealed class Program
     private static async Task AssemblyAI_ITranscriptionClient_FileStreamingExtension()
     {
         using var client = new AssemblyAITranscriptionClient(s_apiKey);
-        var fileOptions = new TranscriptionOptions
+        var fileOptions = new AudioTranscriptionOptions
         {
             SourceSampleRate = 48_000,
             AdditionalProperties = new AdditionalPropertiesDictionary
@@ -107,7 +108,7 @@ internal sealed class Program
     private static async Task AssemblyAI_ITranscriptionClient_FileStreaming()
     {
         using var client = new AssemblyAITranscriptionClient(s_apiKey);
-        var fileOptions = new TranscriptionOptions
+        var fileOptions = new AudioTranscriptionOptions
         {
             SourceSampleRate = 48_000,
             AdditionalProperties = new AdditionalPropertiesDictionary
@@ -126,25 +127,8 @@ internal sealed class Program
         Console.WriteLine("Transcription Complete");
     }
 
-    private static async IAsyncEnumerable<AudioContent> UploadMicrophoneAudio(TranscriptionOptions options)
+    private static async IAsyncEnumerable<AudioContent> UploadMicrophoneAudio(AudioTranscriptionOptions options)
     {
-        var cts = new CancellationTokenSource();
-        var ct = cts.Token;
-
-        Console.CancelKeyPress += (sender, e) => cts.Cancel();
-
-        var soxArguments = string.Join(' ', [
-           // --default-device doesn't work on Windows
-           RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-t waveaudio default" : "--default-device",
-            "--no-show-progress",
-            $"--rate {options.SourceSampleRate}",
-            "--channels 1",
-            "--encoding signed-integer",
-            "--bits 16",
-            "--type wav",
-            "-" // pipe
-       ]);
-
         using var soxProcess = ConsoleUtils.GetMicrophoneStreamProcess(options, out var cancellationToken);
 
         soxProcess.Start();
@@ -152,7 +136,7 @@ internal sealed class Program
 
         await foreach (var update in ConsoleUtils.UploadStreamAsync(soxOutputStream, "audio/wav"))
         {
-            if (ct.IsCancellationRequested)
+            if (cancellationToken.IsCancellationRequested)
             {
                 break;
             }
@@ -296,7 +280,7 @@ internal sealed class Program
         Console.WriteLine(transcript.Text);
     }
 
-    private static void HandleAsyncUpdates(StreamingTranscriptionUpdate update)
+    private static void HandleAsyncUpdates(StreamingAudioTranscriptionUpdate update)
     {
         switch (update.EventName)
         {

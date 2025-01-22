@@ -9,7 +9,7 @@ internal sealed partial class Program
     private static async Task OpenAI_ITranscriptionClient_MicrophoneStreamingExtension()
     {
         using var client = new OpenAITranscriptionClient(s_apiKey);
-        var options = new TranscriptionOptions
+        var options = new AudioTranscriptionOptions
         {
             SourceSampleRate = 16_000,
             SourceFileName = "microphone.wav"

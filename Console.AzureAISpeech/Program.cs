@@ -22,10 +22,10 @@ internal sealed class Program
         s_region = config["AzureAISpeech:Region"]!;
 
         // await AzureAI_ITranscriptionClient_FileNonStreaming();
-        //await AzureAI_ITranscriptionClient_FileNonStreamingExtension();
+        await AzureAI_ITranscriptionClient_FileNonStreamingExtension();
 
         //await AzureAI_ITranscriptionClient_FileStreaming();
-        await AzureAI_ITranscriptionClient_FileStreamingExtension();
+        //await AzureAI_ITranscriptionClient_FileStreamingExtension();
 
         // await AzureAI_ITranscriptionClient_MicrophoneStreaming();
 
@@ -62,7 +62,7 @@ internal sealed class Program
 
         using var audioConfigStream = AudioInputStream.CreatePushStream();
 
-        var audioEnumerable = UploadMicrophoneAudio(new TranscriptionOptions
+        var audioEnumerable = UploadMicrophoneAudio(new AudioTranscriptionOptions
         {
             SourceSampleRate = 16_000
         });
@@ -93,7 +93,7 @@ internal sealed class Program
         Console.WriteLine("Transcription Complete");
     }
 
-    private static async IAsyncEnumerable<AudioContent> UploadMicrophoneAudio(TranscriptionOptions options)
+    private static async IAsyncEnumerable<AudioContent> UploadMicrophoneAudio(AudioTranscriptionOptions options)
     {
         using var soxProcess = ConsoleUtils.GetMicrophoneStreamProcess(options, out var cancellationToken);
 
@@ -116,7 +116,7 @@ internal sealed class Program
     private static async Task AzureAI_ITranscriptionClient_MicrophoneStreaming()
     {
         using var client = new AzureTranscriptionClient(s_subscriptionKey, s_region);
-        var options = new TranscriptionOptions
+        var options = new AudioTranscriptionOptions
         {
             SourceSampleRate = 16_000
         };
@@ -134,7 +134,7 @@ internal sealed class Program
     private static async Task AzureAI_ITranscriptionClient_FileStreaming()
     {
         using var client = new AzureTranscriptionClient(s_subscriptionKey, s_region);
-        var fileOptions = new TranscriptionOptions
+        var fileOptions = new AudioTranscriptionOptions
         {
             SourceSampleRate = 16_000
         };
@@ -152,7 +152,7 @@ internal sealed class Program
     private static async Task AzureAI_ITranscriptionClient_FileStreamingExtension()
     {
         using var client = new AzureTranscriptionClient(s_subscriptionKey, s_region);
-        var fileOptions = new TranscriptionOptions
+        var fileOptions = new AudioTranscriptionOptions
         {
             SourceSampleRate = 16_000
         };
@@ -166,7 +166,7 @@ internal sealed class Program
         Console.WriteLine("Transcription Complete");
     }
 
-    private static void HandleAsyncUpdates(StreamingTranscriptionUpdate update)
+    private static void HandleAsyncUpdates(StreamingAudioTranscriptionUpdate update)
     {
         switch (update.EventName)
         {
