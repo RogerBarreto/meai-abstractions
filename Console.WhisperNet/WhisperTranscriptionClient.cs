@@ -31,7 +31,7 @@ internal sealed partial class WhisperTranscriptionClient : IAudioTranscriptionCl
 
     public async Task<AudioTranscriptionCompletion> TranscribeAsync(IAsyncEnumerable<AudioContent> inputAudio, AudioTranscriptionOptions? options = null, CancellationToken cancellationToken = default)
     {
-        using var audioContentsStream = new AudioContentAsyncEnumerableStream(inputAudio);
+        using var audioContentsStream = inputAudio.ToStream();
 
         AudioTranscriptionCompletion completion = new();
 
@@ -72,7 +72,7 @@ internal sealed partial class WhisperTranscriptionClient : IAudioTranscriptionCl
         AudioTranscriptionOptions? options = null, 
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        using var audioContentsStream = new AudioContentAsyncEnumerableStream(inputAudio);
+        using var audioContentsStream = inputAudio.ToStream();
 
         if (this._processor is null)
         {

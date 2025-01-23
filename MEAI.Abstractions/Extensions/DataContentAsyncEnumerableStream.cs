@@ -3,16 +3,17 @@ using Microsoft.Extensions.AI;
 
 namespace MEAI.Abstractions;
 
-internal class AudioContentAsyncEnumerableStream : Stream
+internal class DataContentAsyncEnumerableStream<T> : Stream 
+    where T : DataContent
 {
-    private readonly IAsyncEnumerator<AudioContent> _enumerator;
+    private readonly IAsyncEnumerator<T> _enumerator;
     private bool _isCompleted;
     private byte[] _remainingData;
     private int _remainingDataOffset;
     private long _position;
     private AudioContent? _firstChunk;
 
-    internal AudioContentAsyncEnumerableStream(IAsyncEnumerable<AudioContent> asyncEnumerable, CancellationToken cancellationToken = default)
+    internal DataContentAsyncEnumerableStream(IAsyncEnumerable<T> asyncEnumerable, CancellationToken cancellationToken = default)
     {
         this._enumerator = asyncEnumerable.GetAsyncEnumerator(cancellationToken);
         this._remainingData = Array.Empty<byte>();
@@ -20,7 +21,7 @@ internal class AudioContentAsyncEnumerableStream : Stream
         this._position = 0;
     }
 
-    internal AudioContentAsyncEnumerableStream(IAsyncEnumerable<AudioContent> asyncEnumerable, AudioContent firstChunk, CancellationToken cancellationToken = default)
+    internal DataContentAsyncEnumerableStream(IAsyncEnumerable<T> asyncEnumerable, AudioContent firstChunk, CancellationToken cancellationToken = default)
         : this(asyncEnumerable, cancellationToken)
     {
         this._firstChunk = firstChunk;

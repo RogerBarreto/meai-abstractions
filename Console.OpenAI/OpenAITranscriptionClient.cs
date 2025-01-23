@@ -41,7 +41,7 @@ public class OpenAITranscriptionClient : IAudioTranscriptionClient
         }
         else
         {
-            using var audioFileStream = new AudioContentAsyncEnumerableStream(audioContent, cancellationToken);
+            using var audioFileStream = audioContent.ToStream();
 
             stopwatch.Start();
             transcriptionResult = await this._client.TranscribeAudioAsync(
