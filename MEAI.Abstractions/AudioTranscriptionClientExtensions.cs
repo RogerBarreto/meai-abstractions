@@ -21,7 +21,7 @@ public static class AudioTranscriptionClientExtensions
         AudioTranscriptionOptions? options = null,
         CancellationToken cancellationToken = default)
         => client.TranscribeAsync(
-            audioStream.ToAsyncEnumerable(ToMediaType(options?.SourceFileName)), 
+            audioStream.ToAsyncEnumerable(), 
             options, 
             cancellationToken);
     
@@ -32,26 +32,9 @@ public static class AudioTranscriptionClientExtensions
         AudioTranscriptionOptions? options = null,
         CancellationToken cancellationToken = default)
         => client.TranscribeStreamingAsync(
-            audioStream.ToAsyncEnumerable(ToMediaType(options?.SourceFileName)),
+            audioStream.ToAsyncEnumerable(),
             options,
             cancellationToken);
-
-    private static string? ToMediaType(string? fileName)
-    {
-        if (string.IsNullOrWhiteSpace(fileName))
-        {
-            return null;
-        }
-
-        var extension = Path.GetExtension(fileName).TrimStart('.');
-
-        if (string.IsNullOrWhiteSpace(extension))
-        {
-            return null;
-        }
-
-        return $"audio/{extension}";
-    }
 
     private static async IAsyncEnumerable<AudioContent> ToAsyncEnumerable(this Stream audioStream, string? mediaType = null)
     {

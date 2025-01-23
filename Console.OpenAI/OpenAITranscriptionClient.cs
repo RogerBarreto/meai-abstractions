@@ -15,10 +15,6 @@ public class OpenAITranscriptionClient : IAudioTranscriptionClient
         this._client = new AudioClient(modelName, apiKey);
     }
 
-    public void Dispose()
-    {
-    }
-
     public async Task<AudioTranscriptionCompletion> TranscribeAsync(IAsyncEnumerable<AudioContent> audioContent, MEAI.Abstractions.AudioTranscriptionOptions? options = null, CancellationToken cancellationToken = default)
     {
         var enumerator = audioContent.GetAsyncEnumerator(cancellationToken);
@@ -50,7 +46,7 @@ public class OpenAITranscriptionClient : IAudioTranscriptionClient
             stopwatch.Start();
             transcriptionResult = await this._client.TranscribeAudioAsync(
                 audioFileStream, 
-                ToFileName(firstChunk.MediaType), 
+                "file.mp3", // this information internally is required but is only being used to create a header name in the multipart request.
                 ToOpenAIOptions(options), cancellationToken);
         }
         stopwatch.Stop();
@@ -81,24 +77,10 @@ public class OpenAITranscriptionClient : IAudioTranscriptionClient
         };
     }
 
+    public void Dispose()
+    {
+    }
+
     private static OpenAI.Audio.AudioTranscriptionOptions ToOpenAIOptions(MEAI.Abstractions.AudioTranscriptionOptions? options) 
         => new(); // To be implemented
-
-    // flac, mp3, mp4, mpeg, mpga, m4a, ogg, wav, or webm.
-    private static string ToFileName(string? mediaType)
-         => mediaType switch
-         {
-             "audio/flac" => "file.flac",
-             "audio/mp3" => "file.mp3",
-             "audio/mp4" => "file.mp4",
-             "audio/mpeg" => "file.mpeg",
-             "audio/mpga" => "file.mpga",
-             "audio/m4a" => "file.m4a",
-             "audio/ogg" => "file.ogg",
-             "audio/wav" or "audio/wave" => "file.wav",
-             "audio/webm" => "file.webm",
-             _ => throw new NotSupportedException($"Media type {mediaType} is not supported.")
-
-         };
-
 }

@@ -126,11 +126,55 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
 
         using var speechRecognizer = new SpeechRecognizer(speechConfig, audioConfig);
 
+        speechRecognizer.SessionStarted += (s, e) =>
+        {
+            updates.Enqueue(new StreamingAudioTranscriptionUpdate
+            {
+                CompletionId = e.SessionId,
+                StartTime = TimeSpan.Zero,
+                EndTime = TimeSpan.Zero,
+                RawRepresentation = e,
+                Kind = AudioTranscriptionUpdateKind.SessionOpen,
+                Text = "Session started.",
+                AdditionalProperties = new AdditionalPropertiesDictionary
+                {
+                    [nameof(e.SessionId)] = e.SessionId
+                }
+            });
+        };
+
         speechRecognizer.Recognizing += (s, e) =>
         {
             var startTime = TimeSpan.FromTicks(e.Result.OffsetInTicks);
+            switch (e.Result.Reason)
+            {
+                case ResultReason.RecognizingSpeech:
+                    updates.Enqueue(new StreamingAudioTranscriptionUpdate
+                    {
+                        CompletionId = e.SessionId,
+                        StartTime = startTime,
+                        EndTime = GetEndTime(startTime, e.Result.Duration),
+                        RawRepresentation = e,
+                        Kind = AudioTranscriptionUpdateKind.Transcribing,
+                        Text = e.Result.Text
+                    });
+                    break;
+
+                default:
+                    updates.Enqueue(new StreamingAudioTranscriptionUpdate
+                    {
+                        CompletionId = e.SessionId,
+                        StartTime = startTime,
+                        EndTime = GetEndTime(startTime, e.Result.Duration),
+                        RawRepresentation = e,
+                        Kind = new AudioTranscriptionUpdateKind(e.Result.Reason.ToString().ToLowerInvariant()),
+                        Text = e.Result.Text
+                    });
+                    break;
+            }
             updates.Enqueue(new StreamingAudioTranscriptionUpdate
             {
+                CompletionId = e.SessionId,
                 StartTime = startTime,
                 EndTime = GetEndTime(startTime, e.Result.Duration),
                 RawRepresentation = e,
@@ -141,20 +185,32 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
 
         speechRecognizer.Recognized += (s, e) =>
         {
-            if (e.Result.Reason == ResultReason.RecognizedSpeech)
+            var startTime = TimeSpan.FromTicks(e.Result.OffsetInTicks);
+            switch (e.Result.Reason)
             {
-                var startTime = TimeSpan.FromTicks(e.Result.OffsetInTicks);
-                updates.Enqueue(new StreamingAudioTranscriptionUpdate([
-                    new TextContent(e.Result.Text) {
-                        RawRepresentation = e.Result,
-                    }])
-                {
-                    StartTime = startTime,
-                    EndTime = GetEndTime(startTime, e.Result.Duration),
-                    RawRepresentation = e,
-                    Kind = AudioTranscriptionUpdateKind.Transcribed,
-                    Text = e.Result.Text
-                });
+                case ResultReason.RecognizedSpeech:
+                    updates.Enqueue(new StreamingAudioTranscriptionUpdate
+                    {
+                        CompletionId = e.SessionId,
+                        StartTime = startTime,
+                        EndTime = GetEndTime(startTime, e.Result.Duration),
+                        RawRepresentation = e,
+                        Kind = AudioTranscriptionUpdateKind.Transcribed,
+                        Text = e.Result.Text
+                    });
+                    break;
+
+                default:
+                    updates.Enqueue(new StreamingAudioTranscriptionUpdate
+                    {
+                        CompletionId = e.SessionId,
+                        StartTime = startTime,
+                        EndTime = GetEndTime(startTime, e.Result.Duration),
+                        RawRepresentation = e,
+                        Kind = new AudioTranscriptionUpdateKind(e.Result.Reason.ToString().ToLowerInvariant()),
+                        Text = e.Result.Text
+                    });
+                    break;
             }
         };
 
@@ -164,23 +220,38 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
                     ? TimeSpan.MaxValue
                     : TimeSpan.FromTicks((long)e.Offset);
 
-            if (e.Reason == CancellationReason.Error) {
+            switch (e.Reason)
+            {
+                case CancellationReason.Error:
+                    updates.Enqueue(
+                        new StreamingAudioTranscriptionUpdate(
+                        [new ErrorContent() {
+                            Code = e.ErrorCode.ToString(),
+                            Details = e.ErrorDetails,
+                            Message = e.Reason.ToString(),
+                        }])
+                        {
+                            CompletionId = e.SessionId,
+                            StartTime = canceledTime,
+                            EndTime = canceledTime,
+                            RawRepresentation = e,
+                            Kind = AudioTranscriptionUpdateKind.Error,
+                            Text = e.ErrorDetails
+                        });
+                    break;
 
-                updates.Enqueue(
-                    new StreamingAudioTranscriptionUpdate(
-                    [new ErrorContent() {
-                        Code = e.ErrorCode.ToString(),
-                        Details = e.ErrorDetails,
-                        Message = e.Reason.ToString(),
-                    }])
-
-                    {
-                        StartTime = canceledTime,
-                        EndTime = canceledTime,
-                        RawRepresentation = e,
-                        Kind = AudioTranscriptionUpdateKind.Error,
-                        Text = e.ErrorDetails
-                    });
+                default:
+                    updates.Enqueue(
+                        new StreamingAudioTranscriptionUpdate
+                        {
+                            CompletionId = e.SessionId,
+                            StartTime = canceledTime,
+                            EndTime = canceledTime,
+                            RawRepresentation = e,
+                            Kind = new AudioTranscriptionUpdateKind(e.Reason.ToString().ToLowerInvariant()),
+                            Text = e.ErrorDetails
+                        });
+                    break;
             }
 
             stopRecognition.TrySetResult(0);
@@ -192,6 +263,7 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
 
             updates.Enqueue(new StreamingAudioTranscriptionUpdate
             {
+                CompletionId = e.SessionId,
                 StartTime = TimeSpan.Zero,
                 EndTime = sessionStopwatch.Elapsed,
                 RawRepresentation = e,

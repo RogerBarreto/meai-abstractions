@@ -169,7 +169,6 @@ internal sealed class Program
         Console.WriteLine("Transcription Started");
         var result = await client.TranscribeAsync(fileStream, new()
         {
-            SourceFileName = "barbara.ogg",
             SourceLanguage = nameof(TranscriptLanguageCode.Pt),
         }, CancellationToken.None);
 

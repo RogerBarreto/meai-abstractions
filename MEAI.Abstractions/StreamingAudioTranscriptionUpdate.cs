@@ -30,6 +30,9 @@ public class StreamingAudioTranscriptionUpdate
     {
     }
 
+    /// <summary>Gets or sets the ID of the completion of which this update is a part.</summary>
+    public string? CompletionId { get; set; }
+
     public required AudioTranscriptionUpdateKind Kind { get; init; }
 
     [JsonIgnore]

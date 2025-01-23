@@ -59,6 +59,7 @@ internal sealed partial class WhisperTranscriptionClient : IAudioTranscriptionCl
             fullTranscription.Append(segment.Text);
         }
 
+        completion.CompletionId = Guid.NewGuid().ToString();
         completion.RawRepresentation = segments;
         completion.Text = fullTranscription.ToString();
         
@@ -81,6 +82,7 @@ internal sealed partial class WhisperTranscriptionClient : IAudioTranscriptionCl
                 .Build();
         }
 
+        var completionId = Guid.NewGuid().ToString();
         await foreach (var segment in this._processor.ProcessAsync(audioContentsStream, cancellationToken))
         {
             if (cancellationToken.IsCancellationRequested)
@@ -90,6 +92,7 @@ internal sealed partial class WhisperTranscriptionClient : IAudioTranscriptionCl
 
             yield return new StreamingAudioTranscriptionUpdate()
             {
+                CompletionId = completionId,
                 Kind = AudioTranscriptionUpdateKind.Transcribing,
                 RawRepresentation = segment,
                 Text = segment.Text,

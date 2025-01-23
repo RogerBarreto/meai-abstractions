@@ -12,8 +12,6 @@ public class AudioTranscriptionOptions
 
     public int? SourceSampleRate { get; set; }
 
-    public string? SourceFileName { get; set; }
-
     public AdditionalPropertiesDictionary? AdditionalProperties { get; set; }
 }
 

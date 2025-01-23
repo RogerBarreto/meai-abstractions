@@ -11,8 +11,7 @@ internal sealed partial class Program
         using var client = new OpenAITranscriptionClient(s_apiKey);
         var options = new AudioTranscriptionOptions
         {
-            SourceSampleRate = 16_000,
-            SourceFileName = "microphone.wav"
+            SourceSampleRate = 16_000
         };
 
         // Upload microphone audio for 5 seconds

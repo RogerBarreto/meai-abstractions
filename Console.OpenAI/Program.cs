@@ -41,10 +41,7 @@ internal sealed partial class Program
         using var fileStream = File.OpenRead(fileName);
 
         Console.WriteLine("Transcription Started");
-        var completion = await client.TranscribeAsync(fileStream, new() 
-        {  
-            SourceFileName = fileName,
-        }, CancellationToken.None);
+        var completion = await client.TranscribeAsync(fileStream, new(), CancellationToken.None);
         Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Text}");
         Console.WriteLine("Transcription Complete.");
     }
