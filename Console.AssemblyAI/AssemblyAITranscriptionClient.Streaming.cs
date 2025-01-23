@@ -28,8 +28,8 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
                 updates.Enqueue(new StreamingAudioTranscriptionUpdate
                 {
                     RawRepresentation = message,
-                    Message = $"Session begins: \n- Session ID: {message.SessionId}\n- Expires at: {message.ExpiresAt}",
-                    EventName = "SessionBegins",
+                    Text = $"Session begins: \n- Session ID: {message.SessionId}\n- Expires at: {message.ExpiresAt}",
+                    Kind = AudioTranscriptionUpdateKind.SessionOpen,
                 });
             });
 
@@ -40,8 +40,8 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
                 updates.Enqueue(new StreamingAudioTranscriptionUpdate
                 {
                     RawRepresentation = closeEvent,
-                    EventName = "Closed",
-                    Message = $"Real-time connection closed: {closeEvent.Code} - {closeEvent.Reason}"
+                    Kind = AudioTranscriptionUpdateKind.SessionClose,
+                    Text = $"Real-time connection closed: {closeEvent.Code} - {closeEvent.Reason}"
                 });
             });
 
@@ -58,8 +58,8 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
                     StartTime = TimeSpan.FromMilliseconds(transcript.AudioStart),
                     EndTime = TimeSpan.FromMilliseconds(transcript.AudioEnd),
                     RawRepresentation = transcript,
-                    EventName = "PartialTranscriptReceived",
-                    Transcription = transcript.Text
+                    Kind = AudioTranscriptionUpdateKind.Transcribing,
+                    Text = transcript.Text
                 });
             });
 
@@ -71,8 +71,8 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
                     StartTime = TimeSpan.FromMilliseconds(transcript.AudioStart),
                     EndTime = TimeSpan.FromMilliseconds(transcript.AudioEnd),
                     RawRepresentation = transcript,
-                    EventName = "FinalTranscriptReceived",
-                    Transcription = transcript.Text,
+                    Kind = AudioTranscriptionUpdateKind.Transcribed,
+                    Text = transcript.Text,
                 });
             });
 
@@ -82,8 +82,8 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
                 updates.Enqueue(new StreamingAudioTranscriptionUpdate
                 {
                     RawRepresentation = error,
-                    EventName = "ErrorReceived",
-                    Message = $"Real-time error: {error.Error}"
+                    Kind = AudioTranscriptionUpdateKind.Error,
+                    Text = $"Real-time error: {error.Error}"
                 });
             });
 

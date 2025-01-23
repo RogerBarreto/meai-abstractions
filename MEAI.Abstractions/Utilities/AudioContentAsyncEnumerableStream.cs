@@ -71,7 +71,7 @@ internal class AudioContentAsyncEnumerableStream : Stream
             else
             {
                 // Special case when the first chunk was skipped and needs to be read
-                if (this._position == 0 && _firstChunk is not null && _firstChunk.Data.HasValue)
+                if (this._position == 0 && this._firstChunk is not null && this._firstChunk.Data.HasValue)
                 {
                     this._remainingData = this._firstChunk.Data.Value.ToArray();
                     this._remainingDataOffset = 0;

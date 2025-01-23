@@ -50,7 +50,7 @@ internal class Program
         Console.WriteLine("Transcription Started");
         await foreach (var update in client.TranscribeStreamingAsync(audioContents, new(), CancellationToken.None))
         {
-            Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime} : {update.Transcription} ");
+            Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime} : {update.Text} ");
         }
         Console.WriteLine("Transcription Complete.");
     }
@@ -65,7 +65,7 @@ internal class Program
         Console.WriteLine("Transcription Started");
         await foreach (var update in client.TranscribeStreamingAsync(fileStream, new(), CancellationToken.None))
         {
-            Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime} : {update.Transcription} ");
+            Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime} : {update.Text} ");
         }
         Console.WriteLine("Transcription Complete.");
     }
@@ -79,7 +79,7 @@ internal class Program
 
         Console.WriteLine("Transcription Started");
         var completion = await client.TranscribeAsync(audioContents, new(), CancellationToken.None);
-        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Content!.Transcription}");
+        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Text}");
         Console.WriteLine("Transcription Complete.");
     }
 
@@ -92,7 +92,7 @@ internal class Program
 
         Console.WriteLine("Transcription Started");
         var completion = await client.TranscribeAsync(fileStream, new(), CancellationToken.None);
-        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Content!.Transcription}");
+        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Text}");
         Console.WriteLine("Transcription Complete.");
     }
 
@@ -109,7 +109,7 @@ internal class Program
         {
             await foreach (var update in client.TranscribeStreamingAsync(audioContents, new(), CancellationToken.None))
             {
-                Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
+                Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime}] : {update.Text} ");
             }
         }
 
@@ -129,7 +129,7 @@ internal class Program
         {
             await foreach (var update in client.TranscribeStreamingAsync(fileStream, new(), CancellationToken.None))
             {
-                Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
+                Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime}] : {update.Text} ");
             }
         }
 

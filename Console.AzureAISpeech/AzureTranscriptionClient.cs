@@ -20,7 +20,7 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
     {
     }
 
-    public async Task<TranscriptionCompletion> TranscribeAsync(IAsyncEnumerable<AudioContent> audioContents, AudioTranscriptionOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<AudioTranscriptionCompletion> TranscribeAsync(IAsyncEnumerable<AudioContent> audioContents, AudioTranscriptionOptions? options = null, CancellationToken cancellationToken = default)
     {
        
         var speechConfig = SpeechConfig.FromSubscription(this._subscriptionKey, this._region);
@@ -65,11 +65,11 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
         audioConfig?.Dispose();
         audioConfigStream?.Dispose();
 
-        return new TranscriptionCompletion
+        return new AudioTranscriptionCompletion
         {
             RawRepresentation = speechRecognitionResult,
             CompletionId = speechRecognitionResult.ResultId,
-            Content = new AudioTranscribedContent(speechRecognitionResult.Text),
+            Text = speechRecognitionResult.Text,
             StartTime = TimeSpan.Zero,
             EndTime = speechRecognitionResult.Duration,
             AdditionalProperties = new AdditionalPropertiesDictionary
@@ -134,8 +134,8 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
                 StartTime = startTime,
                 EndTime = GetEndTime(startTime, e.Result.Duration),
                 RawRepresentation = e,
-                EventName = "Recognizing",
-                Transcription = e.Result.Text
+                Kind = AudioTranscriptionUpdateKind.Transcribing,
+                Text = e.Result.Text
             });
         };
 
@@ -144,25 +144,16 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
             if (e.Result.Reason == ResultReason.RecognizedSpeech)
             {
                 var startTime = TimeSpan.FromTicks(e.Result.OffsetInTicks);
-                updates.Enqueue(new StreamingAudioTranscriptionUpdate
+                updates.Enqueue(new StreamingAudioTranscriptionUpdate([
+                    new TextContent(e.Result.Text) {
+                        RawRepresentation = e.Result,
+                    }])
                 {
                     StartTime = startTime,
                     EndTime = GetEndTime(startTime, e.Result.Duration),
                     RawRepresentation = e,
-                    EventName = "Recognized",
-                    Transcription = e.Result.Text
-                });
-            }
-            else if (e.Result.Reason == ResultReason.NoMatch)
-            {
-                var startTime = TimeSpan.FromTicks(e.Result.OffsetInTicks);
-                updates.Enqueue(new StreamingAudioTranscriptionUpdate
-                {
-                    StartTime = startTime,
-                    EndTime = GetEndTime(startTime, e.Result.Duration),
-                    RawRepresentation = e,
-                    EventName = "NoMatch",
-                    Message = "Speech could not be recognized."
+                    Kind = AudioTranscriptionUpdateKind.Transcribed,
+                    Text = e.Result.Text
                 });
             }
         };
@@ -173,14 +164,24 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
                     ? TimeSpan.MaxValue
                     : TimeSpan.FromTicks((long)e.Offset);
 
-            updates.Enqueue(new StreamingAudioTranscriptionUpdate
-            {
-                StartTime = canceledTime,
-                EndTime = canceledTime,
-                RawRepresentation = e,
-                EventName = "Canceled",
-                Message = $"Reason={e.Reason}, ErrorCode={e.ErrorCode}, ErrorDetails={e.ErrorDetails}"
-            });
+            if (e.Reason == CancellationReason.Error) {
+
+                updates.Enqueue(
+                    new StreamingAudioTranscriptionUpdate(
+                    [new ErrorContent() {
+                        Code = e.ErrorCode.ToString(),
+                        Details = e.ErrorDetails,
+                        Message = e.Reason.ToString(),
+                    }])
+
+                    {
+                        StartTime = canceledTime,
+                        EndTime = canceledTime,
+                        RawRepresentation = e,
+                        Kind = AudioTranscriptionUpdateKind.Error,
+                        Text = e.ErrorDetails
+                    });
+            }
 
             stopRecognition.TrySetResult(0);
         };
@@ -194,8 +195,8 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
                 StartTime = TimeSpan.Zero,
                 EndTime = sessionStopwatch.Elapsed,
                 RawRepresentation = e,
-                EventName = "SessionStopped",
-                Message = "Session stopped event.",
+                Kind = AudioTranscriptionUpdateKind.SessionClose,
+                Text = "Session stopped.",
                 AdditionalProperties = new AdditionalPropertiesDictionary
                 {
                     [nameof(e.SessionId)] = e.SessionId

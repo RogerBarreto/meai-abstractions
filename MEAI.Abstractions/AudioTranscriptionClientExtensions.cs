@@ -5,7 +5,7 @@ namespace MEAI.Abstractions;
 
 public static class AudioTranscriptionClientExtensions
 {
-    public static Task<TranscriptionCompletion> TranscribeAsync(
+    public static Task<AudioTranscriptionCompletion> TranscribeAsync(
         this IAudioTranscriptionClient client,
         AudioContent audioContent, 
         AudioTranscriptionOptions? options = null, 
@@ -15,7 +15,7 @@ public static class AudioTranscriptionClientExtensions
         return client.TranscribeAsync(audioContents.ToAsyncEnumerable(), options, cancellationToken);
     }
 
-    public static Task<TranscriptionCompletion> TranscribeAsync(
+    public static Task<AudioTranscriptionCompletion> TranscribeAsync(
         this IAudioTranscriptionClient client,
         Stream audioStream,
         AudioTranscriptionOptions? options = null,

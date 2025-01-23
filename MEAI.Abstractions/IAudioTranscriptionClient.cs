@@ -5,7 +5,7 @@ namespace MEAI.Abstractions;
 
 public interface IAudioTranscriptionClient : IDisposable
 {
-    Task<TranscriptionCompletion> TranscribeAsync(
+    Task<AudioTranscriptionCompletion> TranscribeAsync(
         IAsyncEnumerable<AudioContent> audioContents, 
         AudioTranscriptionOptions? options = null, 
         CancellationToken cancellationToken = default);

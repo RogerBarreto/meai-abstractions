@@ -19,7 +19,7 @@ public class OpenAITranscriptionClient : IAudioTranscriptionClient
     {
     }
 
-    public async Task<TranscriptionCompletion> TranscribeAsync(IAsyncEnumerable<AudioContent> audioContent, MEAI.Abstractions.AudioTranscriptionOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<AudioTranscriptionCompletion> TranscribeAsync(IAsyncEnumerable<AudioContent> audioContent, MEAI.Abstractions.AudioTranscriptionOptions? options = null, CancellationToken cancellationToken = default)
     {
         var enumerator = audioContent.GetAsyncEnumerator(cancellationToken);
         await enumerator.MoveNextAsync();
@@ -55,10 +55,10 @@ public class OpenAITranscriptionClient : IAudioTranscriptionClient
         }
         stopwatch.Stop();
 
-        return new TranscriptionCompletion
+        return new AudioTranscriptionCompletion
         {
             RawRepresentation = transcriptionResult,
-            Content = new AudioTranscribedContent(transcriptionResult.Text),
+            Text = transcriptionResult.Text,
             StartTime = TimeSpan.Zero,
             EndTime = stopwatch.Elapsed
         };
@@ -73,9 +73,9 @@ public class OpenAITranscriptionClient : IAudioTranscriptionClient
 
         yield return new StreamingAudioTranscriptionUpdate
         {
-            EventName = "TranscriptionComplete",
+            Kind = AudioTranscriptionUpdateKind.Transcribed,
             RawRepresentation = transcriptionCompletion.RawRepresentation,
-            Transcription = transcriptionCompletion.Content?.Transcription,
+            Text = transcriptionCompletion.Text,
             StartTime = transcriptionCompletion.StartTime,
             EndTime = transcriptionCompletion.EndTime
         };

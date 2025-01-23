@@ -48,14 +48,14 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
         }
     }
 
-    private TranscriptionCompletion ToTranscriptionCompletion(Transcript transcript)
+    private AudioTranscriptionCompletion ToTranscriptionCompletion(Transcript transcript)
     {
         return new()
         {
             RawRepresentation = transcript,
             CompletionId = transcript.Id,
             ModelId = transcript.LanguageModel,
-            Content = transcript.Text is not null ? new(transcript.Text) : null
+            Text = transcript.Text
         };
     }
 }

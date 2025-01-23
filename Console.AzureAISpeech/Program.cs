@@ -40,7 +40,7 @@ internal sealed class Program
 
         Console.WriteLine("Transcription Started");
         var completion = await client.TranscribeAsync(audioContents, new(), CancellationToken.None);
-        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Content!.Transcription}");
+        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Text}");
         Console.WriteLine("Transcription Complete.");
     }
 
@@ -52,7 +52,7 @@ internal sealed class Program
 
         Console.WriteLine("Transcription Started");
         var completion = await client.TranscribeAsync(fileStream, new(), CancellationToken.None);
-        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Content!.Transcription}");
+        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Text}");
         Console.WriteLine("Transcription Complete.");
     }
 
@@ -168,23 +168,21 @@ internal sealed class Program
 
     private static void HandleAsyncUpdates(StreamingAudioTranscriptionUpdate update)
     {
-        switch (update.EventName)
+        if (update.Kind == AudioTranscriptionUpdateKind.Transcribed)
         {
-            case "Recognizing":
-                Console.WriteLine($"Recognizing: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
-                break;
-            case "Recognized":
-                Console.WriteLine($"Recognized: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
-                break;
-            case "NoMatch":
-                Console.WriteLine($"NoMatch: [{update.StartTime} --> {update.EndTime}] : {update.Message} ");
-                break;
-            case "Canceled":
-                Console.WriteLine($"Canceled: [{update.StartTime} --> {update.EndTime}] : {update.Message} ");
-                break;
-            case "SessionStopped":
-                Console.WriteLine($"SessionStopped: {update.Message} ");
-                break;
+            Console.WriteLine($"Transcribed: [{update.StartTime} --> {update.EndTime}] : {update.Text} ");
+        }
+        else if (update.Kind == AudioTranscriptionUpdateKind.Transcribing)
+        {
+            Console.WriteLine($"Transcribing: [{update.StartTime} --> {update.EndTime}] : {update.Text} ");
+        }
+        else if (update.Kind == AudioTranscriptionUpdateKind.Error)
+        {
+            Console.WriteLine($"Error: [{update.StartTime} --> {update.EndTime}] : {update.Text} ");
+        }
+        else if (update.Kind == AudioTranscriptionUpdateKind.SessionClose)
+        {
+            Console.WriteLine($"SessionClose: {update.Text} ");
         }
     }
 }

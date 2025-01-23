@@ -48,7 +48,7 @@ internal sealed partial class Program
 
         await foreach (var update in client.TranscribeStreamingAsync(memoryStream, options, CancellationToken.None))
         {
-            Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
+            Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime}] : {update.Text} ");
         }
 
         Console.WriteLine("Transcription Complete");

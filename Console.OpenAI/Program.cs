@@ -30,7 +30,7 @@ internal sealed partial class Program
 
         Console.WriteLine("Transcription Started");
         var completion = await client.TranscribeAsync(audioContents, new(), CancellationToken.None);
-        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Content!.Transcription}");
+        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Text}");
         Console.WriteLine("Transcription Complete.");
     }
 
@@ -45,7 +45,7 @@ internal sealed partial class Program
         {  
             SourceFileName = fileName,
         }, CancellationToken.None);
-        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Content!.Transcription}");
+        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Text}");
         Console.WriteLine("Transcription Complete.");
     }
 
@@ -61,7 +61,7 @@ internal sealed partial class Program
 
         await foreach (var update in client.TranscribeStreamingAsync(audioContents, fileOptions, CancellationToken.None))
         {
-            Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
+            Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime}] : {update.Text} ");
         }
     }
 }

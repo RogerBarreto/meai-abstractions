@@ -7,7 +7,7 @@ namespace ConsoleAssemblyAI;
 
 internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptionClient
 {
-    public async Task<TranscriptionCompletion> TranscribeAsync(IAsyncEnumerable<AudioContent> audioContent, AudioTranscriptionOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<AudioTranscriptionCompletion> TranscribeAsync(IAsyncEnumerable<AudioContent> audioContent, AudioTranscriptionOptions? options = null, CancellationToken cancellationToken = default)
     {
         Transcript? transcript = null;
 
@@ -38,7 +38,7 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
         return this.ToTranscriptionCompletion(transcript);
     }
 
-    public async Task<TranscriptionCompletion> TranscribeAsync(Stream stream, CancellationToken cancellationToken = default)
+    public async Task<AudioTranscriptionCompletion> TranscribeAsync(Stream stream, CancellationToken cancellationToken = default)
     {
         var transcript = await this._client.Transcripts.TranscribeAsync(stream, new(), cancellationToken);
 

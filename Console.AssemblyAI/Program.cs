@@ -157,7 +157,7 @@ internal sealed class Program
         {
             SourceLanguage = nameof(TranscriptLanguageCode.Pt),
         }, CancellationToken.None);
-        Console.WriteLine($"Transcription: {result?.Content!.Transcription}");
+        Console.WriteLine($"Transcription: {result?.Text}");
         Console.WriteLine("Transcription Complete");
     }
 
@@ -173,7 +173,7 @@ internal sealed class Program
             SourceLanguage = nameof(TranscriptLanguageCode.Pt),
         }, CancellationToken.None);
 
-        Console.WriteLine($"Transcription: {result?.Content!.Transcription}");
+        Console.WriteLine($"Transcription: {result?.Text}");
         Console.WriteLine("Transcription Complete");
     }
 
@@ -282,23 +282,25 @@ internal sealed class Program
 
     private static void HandleAsyncUpdates(StreamingAudioTranscriptionUpdate update)
     {
-        switch (update.EventName)
+        if (update.Kind == AudioTranscriptionUpdateKind.Transcribing)
         {
-            case "PartialTranscriptReceived":
-                Console.WriteLine($"PartialTranscriptReceived: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
-                break;
-            case "FinalTranscriptReceived":
-                Console.WriteLine($"FinalTranscriptReceived: [{update.StartTime} --> {update.EndTime}] : {update.Transcription} ");
-                break;
-            case "SessionBegins":
-                Console.WriteLine($"SessionBegins: {update.Message}");
-                break;
-            case "Closed":
-                Console.WriteLine($"Closed: {update.Message}");
-                break;
-            case "ErrorReceived":
-                Console.WriteLine($"ErrorReceived: {update.Message}");
-                break;
+            Console.WriteLine($"Transcribing: [{update.StartTime} --> {update.EndTime}] : {update.Text} ");
+        }
+        else if (update.Kind == AudioTranscriptionUpdateKind.Transcribed)
+        {
+            Console.WriteLine($"FinalTranscriptReceived: [{update.StartTime} --> {update.EndTime}] : {update.Text} ");
+        }
+        else if (update.Kind == AudioTranscriptionUpdateKind.SessionOpen)
+        {
+            Console.WriteLine($"SessionOpen: {update.Text}");
+        }
+        else if (update.Kind == AudioTranscriptionUpdateKind.SessionClose)
+        {
+            Console.WriteLine($"SessionClose: {update.Text}");
+        }
+        else if (update.Kind == AudioTranscriptionUpdateKind.Error)
+        {
+            Console.WriteLine($"Error: {update.Text}");
         }
     }
 }
