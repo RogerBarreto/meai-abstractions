@@ -62,7 +62,6 @@ internal partial class Program
         Console.WriteLine("Transcription Complete.");
     }
 
-    
     private static async Task Whisper_ITranscriptionClient_MicrophoneStreamingExtension()
     {
         var modelFile = "ggml-large-v3.bin";
@@ -72,7 +71,7 @@ internal partial class Program
 
         // Whisper API doesn't support real-time, to achieve real-time behavior we need to record audio
         // saving it in memory of X seconds and then send them to the API for transcription.
-        await foreach (var fileStream in UploadMicrophoneAudioStreamAsync(new AudioTranscriptionOptions { SourceSampleRate = 16_000 }))
+        await foreach (var fileStream in ConsoleUtils.UploadMicrophoneAudioStreamAsync(new AudioTranscriptionOptions { SourceSampleRate = 16_000 }, TimeSpan.FromSeconds(5)))
         {
             await foreach (var update in client.TranscribeStreamingAsync(fileStream, new(), CancellationToken.None))
             {

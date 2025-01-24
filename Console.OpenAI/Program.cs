@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using MEAI.Abstractions;
 using ConsoleUtilities;
+using System.Diagnostics;
 
 namespace ConsoleOpenAI;
 
@@ -17,21 +18,8 @@ internal sealed partial class Program
         s_apiKey = config["OpenAI:ApiKey"]!;
 
         // await OpenAI_ITranscriptionClient_FileNonStreamingExtension();
-        // await OpenAI_ITranscriptionClient_MicrophoneStreaming();
 
-        // await OpenAI_ITranscriptionClient_FileStreaming();
         await OpenAI_ITranscriptionClient_MicrophoneStreamingExtension();
-    }
-
-    private static async Task OpenAI_ITranscriptionClient_FileNonStreaming()
-    {
-        using var client = new OpenAITranscriptionClient(s_apiKey);
-        var audioContents = ConsoleUtils.UploadAudioFileAsync("Resources/ian.wav", "audio/wav");
-
-        Console.WriteLine("Transcription Started");
-        var completion = await client.TranscribeAsync(audioContents, new(), CancellationToken.None);
-        Console.WriteLine($"Transcription: [{completion.StartTime} --> {completion.EndTime}] : {completion.Text}");
-        Console.WriteLine("Transcription Complete.");
     }
 
     private static async Task OpenAI_ITranscriptionClient_FileNonStreamingExtension()
@@ -46,19 +34,23 @@ internal sealed partial class Program
         Console.WriteLine("Transcription Complete.");
     }
 
-    private static async Task OpenAI_ITranscriptionClient_FileStreaming()
+    private static async Task OpenAI_ITranscriptionClient_MicrophoneStreamingExtension()
     {
         using var client = new OpenAITranscriptionClient(s_apiKey);
-        var fileOptions = new AudioTranscriptionOptions
+        var options = new AudioTranscriptionOptions
         {
             SourceSampleRate = 16_000
         };
 
-        var audioContents = ConsoleUtils.UploadAudioFileAsync("Resources/ian.wav", "audio/wav");
-
-        await foreach (var update in client.TranscribeStreamingAsync(audioContents, fileOptions, CancellationToken.None))
+        Console.WriteLine("Transcription Started");
+        // Upload microphone streams for each 5 seconds of recording
+        await foreach (var recordedStream in ConsoleUtils.UploadMicrophoneAudioStreamAsync(options, TimeSpan.FromSeconds(5)))
         {
-            Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime}] : {update.Text} ");
+            await foreach (var update in client.TranscribeStreamingAsync(recordedStream, options, CancellationToken.None))
+            {
+                Console.WriteLine($"Update: [{update.StartTime} --> {update.EndTime}] : {update.Text} ");
+            }
         }
+        Console.WriteLine("Transcription Complete");
     }
 }

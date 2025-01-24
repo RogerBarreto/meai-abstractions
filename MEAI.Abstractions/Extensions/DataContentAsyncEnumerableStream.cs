@@ -11,19 +11,14 @@ internal class DataContentAsyncEnumerableStream<T> : Stream
     private byte[] _remainingData;
     private int _remainingDataOffset;
     private long _position;
-    private AudioContent? _firstChunk;
+    private T? _firstChunk;
 
-    internal DataContentAsyncEnumerableStream(IAsyncEnumerable<T> asyncEnumerable, CancellationToken cancellationToken = default)
+    internal DataContentAsyncEnumerableStream(IAsyncEnumerable<T> asyncEnumerable, T? firstChunk = null, CancellationToken cancellationToken = default)
     {
         this._enumerator = asyncEnumerable.GetAsyncEnumerator(cancellationToken);
         this._remainingData = Array.Empty<byte>();
         this._remainingDataOffset = 0;
         this._position = 0;
-    }
-
-    internal DataContentAsyncEnumerableStream(IAsyncEnumerable<T> asyncEnumerable, AudioContent firstChunk, CancellationToken cancellationToken = default)
-        : this(asyncEnumerable, cancellationToken)
-    {
         this._firstChunk = firstChunk;
     }
 

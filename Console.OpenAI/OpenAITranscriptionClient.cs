@@ -41,12 +41,12 @@ public class OpenAITranscriptionClient : IAudioTranscriptionClient
         }
         else
         {
-            using var audioFileStream = audioContent.ToStream();
+            using var audioFileStream = audioContent.ToStream(firstChunk);
 
             stopwatch.Start();
             transcriptionResult = await this._client.TranscribeAudioAsync(
                 audioFileStream, 
-                "file.mp3", // this information internally is required but is only being used to create a header name in the multipart request.
+                "file.wav", // this information internally is required but is only being used to create a header name in the multipart request.
                 ToOpenAIOptions(options), cancellationToken);
         }
         stopwatch.Stop();

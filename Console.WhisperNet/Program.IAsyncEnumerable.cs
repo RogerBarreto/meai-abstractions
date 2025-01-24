@@ -77,68 +77,6 @@ internal partial class Program
         }
     }
 
-    private static async IAsyncEnumerable<Stream> UploadMicrophoneAudioStreamAsync(AudioTranscriptionOptions options)
-    {
-        var cts = new CancellationTokenSource();
-        var ct = cts.Token;
-
-        Console.CancelKeyPress += (sender, e) => cts.Cancel();
-
-        var soxArguments = string.Join(' ', [
-           // --default-device doesn't work on Windows
-           RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-t waveaudio default" : "--default-device",
-            "--no-show-progress",
-            $"--rate {options.SourceSampleRate}",
-            "--channels 1",
-            "--encoding signed-integer",
-            "--bits 16",
-            "--type wav",
-            "output.wav",
-            "trim 0 5" // Record and save to a file for every 5 seconds
-       ]);
-
-        using var soxProcess = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = "sox",
-                Arguments = soxArguments,
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            }
-        };
-
-        Queue<byte[]> intervalStreams = [];
-
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-        _ = Task.Run(async () =>
-        {
-            while (!ct.IsCancellationRequested)
-            {
-                soxProcess.Start();
-                await soxProcess.WaitForExitAsync();
-
-                intervalStreams.Enqueue(File.ReadAllBytes("output.wav"));
-
-                File.Delete("output.wav");
-            }
-        });
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-
-        while (!ct.IsCancellationRequested)
-        {
-            if (intervalStreams.Count > 0)
-            {
-                yield return new MemoryStream(intervalStreams.Dequeue());
-            }
-            else
-            {
-                await Task.Delay(100);
-            }
-        }
-    }
-
     private static async Task DownloadModel(string fileName, GgmlType ggmlType)
     {
         Console.WriteLine($"Downloading Model {fileName}");
