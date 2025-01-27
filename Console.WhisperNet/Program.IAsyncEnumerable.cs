@@ -70,7 +70,7 @@ internal partial class Program
 
     private static async IAsyncEnumerable<IAsyncEnumerable<AudioContent>> UploadMicrophoneAudio(AudioTranscriptionOptions options)
     {
-        await foreach (var fileStream in UploadMicrophoneAudioStreamAsync(options))
+        await foreach (var fileStream in ConsoleUtils.UploadMicrophoneAudioStreamAsync(options, TimeSpan.FromSeconds(5)))
         {
             yield return ConsoleUtils.UploadStreamAsync(fileStream, "audio/wav");
             fileStream.Dispose();

@@ -1,0 +1,1 @@
+# Architecture Decision Record - Microsoft.Extensions.AI.Abstracitons for Audio Transcription (Audio to Text)
