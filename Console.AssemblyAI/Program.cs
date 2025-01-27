@@ -18,9 +18,9 @@ internal sealed partial class Program
 
         s_apiKey = config["AssemblyAI:ApiKey"]!;
 
-        await AssemblyAI_ITranscriptionClient_FileStreamingExtension();
+        await AssemblyAI_ITranscriptionClient_MicrophoneStreamingExtension();
 
-        // await AssemblyAI_ITranscriptionClient_MicrophoneStreamingExtension();
+        // await AssemblyAI_ITranscriptionClient_FileStreamingExtension();
 
         // await AssemblyAI_ITranscriptionClient_NonStreamingExtension();
     }
@@ -96,7 +96,7 @@ internal sealed partial class Program
         }
         else if (update.Kind == AudioTranscriptionUpdateKind.Transcribed)
         {
-            Console.WriteLine($"FinalTranscriptReceived: [{update.StartTime} --> {update.EndTime}] : {update.Text} ");
+            Console.WriteLine($"Transcribed: [{update.StartTime} --> {update.EndTime}] : {update.Text} ");
         }
         else if (update.Kind == AudioTranscriptionUpdateKind.SessionOpen)
         {

@@ -24,12 +24,14 @@ internal partial class Program
             RuntimeLibrary.Cuda
         ];
 
-        await Whisper_ITranscriptionClient_FileNonStreamingExtension();
-
-        await Whisper_ITranscriptionClient_FileStreamingExtension();
-
         await Whisper_ITranscriptionClient_MicrophoneStreamingExtension();
+
+        // await Whisper_ITranscriptionClient_FileNonStreamingExtension();
+
+        // await Whisper_ITranscriptionClient_FileStreamingExtension();
+
     }
+
     private static async Task Whisper_ITranscriptionClient_FileNonStreamingExtension()
     {
         var modelFile = "ggml-large-v3.bin";
