@@ -18,9 +18,9 @@ internal sealed partial class Program
 
         //await AzureAI_ITranscriptionClient_FileNonStreamingExtension();
 
-        //await AzureAI_ITranscriptionClient_FileStreamingExtension();
+        await AzureAI_ITranscriptionClient_FileStreamingExtension();
 
-        await AzureAI_ITranscriptionClient_MicrophoneStreamingExtensions();
+        //await AzureAI_ITranscriptionClient_MicrophoneStreamingExtensions();
     }
 
     private static async Task AzureAI_ITranscriptionClient_FileNonStreamingExtension()

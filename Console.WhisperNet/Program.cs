@@ -24,12 +24,11 @@ internal partial class Program
             RuntimeLibrary.Cuda
         ];
 
-        await Whisper_ITranscriptionClient_MicrophoneStreamingExtension();
+        // await Whisper_ITranscriptionClient_MicrophoneStreamingExtension();
 
         // await Whisper_ITranscriptionClient_FileNonStreamingExtension();
 
-        // await Whisper_ITranscriptionClient_FileStreamingExtension();
-
+        await Whisper_ITranscriptionClient_FileStreamingExtension();
     }
 
     private static async Task Whisper_ITranscriptionClient_FileNonStreamingExtension()
@@ -37,7 +36,7 @@ internal partial class Program
         var modelFile = "ggml-large-v3.bin";
         using var client = new WhisperTranscriptionClient(modelFile);
 
-        using var fileStream = File.OpenRead("Resources/barbara.wav");
+        using var fileStream = File.OpenRead("Resources/ian.wav");
 
         Console.WriteLine("Transcription Started");
         var completion = await client.TranscribeAsync(fileStream, new(), CancellationToken.None);
