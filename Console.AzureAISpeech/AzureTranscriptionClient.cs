@@ -24,7 +24,7 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
     {
        
         var speechConfig = SpeechConfig.FromSubscription(this._subscriptionKey, this._region);
-        speechConfig.SpeechRecognitionLanguage = options?.SourceLanguage ?? "en-US";
+        speechConfig.SpeechRecognitionLanguage = options?.AudioLanguage ?? "en-US";
         PushAudioInputStream? audioConfigStream = null;  
         AudioConfig? audioConfig = null;
 
@@ -82,7 +82,7 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
     public async IAsyncEnumerable<StreamingAudioTranscriptionUpdate> TranscribeStreamingAsync(IAsyncEnumerable<AudioContent> audioContents, AudioTranscriptionOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var speechConfig = SpeechConfig.FromSubscription(this._subscriptionKey, this._region);
-        speechConfig.SpeechRecognitionLanguage = options?.SourceLanguage ?? "en-US";
+        speechConfig.SpeechRecognitionLanguage = options?.AudioLanguage ?? "en-US";
         using var audioConfigStream = AudioInputStream.CreatePushStream();
         using var audioConfig = AudioConfig.FromStreamInput(audioConfigStream);
         Stopwatch sessionStopwatch = new();
@@ -172,15 +172,6 @@ public class AzureTranscriptionClient : IAudioTranscriptionClient
                     });
                     break;
             }
-            updates.Enqueue(new StreamingAudioTranscriptionUpdate
-            {
-                CompletionId = e.SessionId,
-                StartTime = startTime,
-                EndTime = GetEndTime(startTime, e.Result.Duration),
-                RawRepresentation = e,
-                Kind = AudioTranscriptionUpdateKind.Transcribing,
-                Text = e.Result.Text
-            });
         };
 
         speechRecognizer.Recognized += (s, e) =>

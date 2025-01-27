@@ -1,14 +1,9 @@
-﻿
-using AssemblyAI;
-using AssemblyAI.Realtime;
-using AssemblyAI.Transcripts;
+﻿using AssemblyAI.Transcripts;
 using ConsoleAssemblyAI;
 using ConsoleUtilities;
 using MEAI.Abstractions;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace ConsoleOpenAI;
 
@@ -35,7 +30,7 @@ internal sealed partial class Program
         using var client = new AssemblyAITranscriptionClient(s_apiKey);
         var options = new AudioTranscriptionOptions
         {
-            SourceSampleRate = 16_000,
+            AudioSampleRate = 16_000,
             AdditionalProperties = new AdditionalPropertiesDictionary
             {
                 { "DisablePartialTranscripts", false }
@@ -53,6 +48,8 @@ internal sealed partial class Program
             HandleAsyncUpdates(update);
         }
         Console.WriteLine("Transcription Complete");
+
+        soxProcess.Kill();
     }
 
     private static async Task AssemblyAI_ITranscriptionClient_FileStreamingExtension()
@@ -60,7 +57,7 @@ internal sealed partial class Program
         using var client = new AssemblyAITranscriptionClient(s_apiKey);
         var fileOptions = new AudioTranscriptionOptions
         {
-            SourceSampleRate = 16_000,
+            AudioSampleRate = 16_000,
             AdditionalProperties = new AdditionalPropertiesDictionary
             {
                 { "DisablePartialTranscripts", false }
@@ -84,7 +81,7 @@ internal sealed partial class Program
         Console.WriteLine("Transcription Started");
         var result = await client.TranscribeAsync(fileStream, new()
         {
-            SourceLanguage = nameof(TranscriptLanguageCode.Pt),
+            AudioLanguage = nameof(TranscriptLanguageCode.Pt),
         }, CancellationToken.None);
 
         Console.WriteLine($"Transcription: {result?.Text}");

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Extensions.AI;
-using System;
-using System.Collections.Generic;
 #if !NET
 using System.Linq;
 #else

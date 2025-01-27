@@ -1,6 +1,5 @@
 ﻿
 using Microsoft.Extensions.AI;
-using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
@@ -10,13 +9,13 @@ public class AudioTranscriptionCompletion
 {
     private IList<AIContent>? _contents;
 
-    /// <summary>Initializes a new instance of the <see cref="ChatMessage"/> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="AudioTranscriptionCompletion"/> class.</summary>
     [JsonConstructor]
     public AudioTranscriptionCompletion()
     {
     }
 
-    /// <summary>Initializes a new instance of the <see cref="ChatMessage"/> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="AudioTranscriptionCompletion"/> class.</summary>
     /// <param name="contents">The contents for this message.</param>
     public AudioTranscriptionCompletion(IList<AIContent> contents)
     {
@@ -24,7 +23,7 @@ public class AudioTranscriptionCompletion
         this._contents = contents;
     }
 
-    /// <summary>Initializes a new instance of the <see cref="ChatMessage"/> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="AudioTranscriptionCompletion"/> class.</summary>
     /// <param name="content">Content of the message.</param>
     public AudioTranscriptionCompletion(string? content)
         : this(content is null ? [] : [new TextContent(content)])

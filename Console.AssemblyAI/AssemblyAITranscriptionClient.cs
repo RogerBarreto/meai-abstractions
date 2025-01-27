@@ -29,7 +29,7 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
             return request;
         }
 
-        request.LanguageCode = ToSourceLanguage(transcriptionOptions.SourceLanguage);
+        request.LanguageCode = ToSourceLanguage(transcriptionOptions.AudioLanguage);
 
         return request;
 

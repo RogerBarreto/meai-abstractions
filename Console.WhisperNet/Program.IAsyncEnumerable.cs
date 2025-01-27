@@ -2,12 +2,8 @@
 using ConsoleWhisperNet;
 using MEAI.Abstractions;
 using Microsoft.Extensions.AI;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Whisper.net;
 using Whisper.net.Ggml;
-using Whisper.net.LibraryLoader;
-using Whisper.net.Logger;
 
 internal partial class Program
 {
@@ -48,7 +44,7 @@ internal partial class Program
         
         // Whisper API doesn't support real-time, to achieve real-time behavior we need to record audio
         // saving it in memory of X seconds and then send them to the API for transcription.
-        await foreach (var audioContents in UploadMicrophoneAudio(new AudioTranscriptionOptions { SourceSampleRate = 16_000 }))
+        await foreach (var audioContents in UploadMicrophoneAudio(new AudioTranscriptionOptions { AudioSampleRate = 16_000 }))
         {
             await foreach (var update in client.TranscribeStreamingAsync(audioContents, new(), CancellationToken.None))
             {

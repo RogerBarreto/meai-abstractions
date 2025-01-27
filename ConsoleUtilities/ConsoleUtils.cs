@@ -22,7 +22,7 @@ public class ConsoleUtils
            // --default-device doesn't work on Windows
            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-t waveaudio default" : "--default-device",
             "--no-show-progress",
-            $"--rate {options.SourceSampleRate}",
+            $"--rate {options.AudioSampleRate}",
             "--channels 1",
             "--encoding signed-integer",
             "--bits 16",
@@ -80,7 +80,7 @@ public class ConsoleUtils
            // --default-device doesn't work on Windows
            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "-t waveaudio default" : "--default-device",
             "--no-show-progress",
-            $"--rate {options.SourceSampleRate}",
+            $"--rate {options.AudioSampleRate}",
             "--channels 1",
             "--encoding signed-integer",
             "--bits 16",

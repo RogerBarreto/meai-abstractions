@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Configuration;
 using MEAI.Abstractions;
 using ConsoleUtilities;
 using Microsoft.Extensions.AI;
@@ -13,7 +12,7 @@ internal sealed partial class Program
         using var client = new OpenAITranscriptionClient(s_apiKey);
         var fileOptions = new AudioTranscriptionOptions
         {
-            SourceSampleRate = 16_000
+            AudioSampleRate = 16_000
         };
 
         var audioContents = ConsoleUtils.UploadAudioFileAsync("Resources/ian.wav", "audio/wav");
@@ -31,7 +30,7 @@ internal sealed partial class Program
         using var client = new OpenAITranscriptionClient(s_apiKey);
         var options = new AudioTranscriptionOptions
         {
-            SourceSampleRate = 16_000
+            AudioSampleRate = 16_000
         };
 
         // Upload microphone audio for 5 seconds

@@ -35,6 +35,20 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
                 });
             });
 
+        transcriber.ExceptionOccurred.Subscribe(
+            exception =>
+            {
+                updates.Enqueue(new StreamingAudioTranscriptionUpdate([new ErrorContent() { 
+                    Message = exception.Message, 
+                    Details = exception.StackTrace, 
+                    Code = exception.Source }])
+                {
+                    CompletionId = sessionId,
+                    RawRepresentation = exception,
+                    Kind = AudioTranscriptionUpdateKind.Error
+                });
+            });
+
         transcriber.Closed.Subscribe(
             closeEvent =>
             {
@@ -84,7 +98,7 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
         transcriber.ErrorReceived.Subscribe(
             error =>
             {
-                updates.Enqueue(new StreamingAudioTranscriptionUpdate
+                updates.Enqueue(new StreamingAudioTranscriptionUpdate([new ErrorContent() { Message = error.Error }])
                 {
                     CompletionId = sessionId,
                     RawRepresentation = error,
@@ -138,7 +152,7 @@ internal sealed partial class AssemblyAITranscriptionClient : IAudioTranscriptio
             return new()
             {
                 ApiKey = this._apiKey,
-                SampleRate = (uint)(transcriptionOptions.SourceSampleRate ?? 16_000),
+                SampleRate = (uint)(transcriptionOptions.AudioSampleRate ?? 16_000),
                 DisablePartialTranscripts = transcriptionOptions.AdditionalProperties?[nameof(RealtimeTranscriberOptions.DisablePartialTranscripts)] as bool? ?? false,
             };
         }
