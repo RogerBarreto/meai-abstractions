@@ -351,3 +351,29 @@ public class MyAudioTranscriptionClient : IAudioTranscriptionClient
     }
 }
 ```
+
+### SK Abstractions and Adapters
+
+Similarly how we have `ChatClient` and `ChatService` abstractions, we will have `AudioTranscriptionClient` and `AudioToTextService` abstractions, where the `AudioTranscriptionClient` will be the main entry point for the project to consume the audio transcription services, and the `AudioToTextService` will be the main entry point for the services to implement the audio transcription services.
+
+```csharp
+public static class AudioToTextServiceExtensions
+{
+    public static IAudioTranscriptionClient ToAudioTranscriptionClient(this IAudioToTextService service)
+    {
+        ArgumentNullException.ThrowIfNull(service);
+
+        return service is IAudioTranscriptionClient client ?
+            client :
+            new AudioTranscriptionClientAudioToTextService(service);
+    }
+
+    public static IAudioToTextService ToAudioToTextService(this IAudioTranscriptionClient client)
+    {
+        ArgumentNullException.ThrowIfNull(client);
+        return client is IAudioToTextService service ?
+            service :
+            new AudioToTextServiceAudioTranscriptionClient(client);
+    }
+}
+```
