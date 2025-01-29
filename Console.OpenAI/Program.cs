@@ -16,9 +16,11 @@ internal sealed partial class Program
 
         s_apiKey = config["OpenAI:ApiKey"]!;
 
-        // await OpenAI_ITranscriptionClient_FileNonStreamingExtension();
+        // await OpenAI_ITranscriptionClient_FileNonStreamingFromSKService();
 
-        await OpenAI_ITranscriptionClient_MicrophoneStreamingExtension();
+        await OpenAI_ITranscriptionClient_FileNonStreamingToSKService();
+
+        // await OpenAI_ITranscriptionClient_MicrophoneStreamingSK();
     }
 
     private static async Task OpenAI_ITranscriptionClient_FileNonStreamingExtension()

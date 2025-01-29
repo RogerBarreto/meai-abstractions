@@ -9,13 +9,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="OpenAI" Version="2.1.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.35.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ConsoleUtilities\ConsoleUtilities.csproj" />
     <ProjectReference Include="..\MEAI.Abstractions\MEAI.Abstractions.csproj" />
+    <ProjectReference Include="..\SK.Abstractions\SK.Abstractions.csproj" />
   </ItemGroup>
 
 	<ItemGroup>
